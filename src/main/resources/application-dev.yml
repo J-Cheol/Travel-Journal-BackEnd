@@ -7,3 +7,7 @@ spring:
 
 springdoc:
   request-url: ${secret.dev-request-url}
+
+oauth:
+  kakao:
+    redirect-uri: ${oauth.kakao.dev-redirect-uri}
