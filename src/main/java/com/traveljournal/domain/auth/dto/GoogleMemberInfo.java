@@ -10,5 +10,8 @@ public record GoogleMemberInfo(
         String email,
         String name,
         String picture
+
 ) {
+
+
 }

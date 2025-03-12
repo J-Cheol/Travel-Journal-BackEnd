@@ -81,6 +81,31 @@ public class AuthController {
 		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
 	}
 
+	// 구글 로그인 콜백
+	@Operation(
+			summary = "Google Login callback",
+			description = "구글 인증 코드를 받아 로그인/회원가입 후 헤더에 액세스 토큰을 발급합니다."
+	)
+	@GetMapping("/login/google/callback")
+	public ResponseEntity<LoginResponse> googleCallback(
+			@RequestParam String code,
+			@RequestParam(required = false) String deviceId
+	) {
+		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithCode(SocialProvider.GOOGLE, code, deviceId);
+		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+	}
+
+	// 구글 ID 토큰 로그인
+	@PostMapping("/login/google/id-token")
+	public ResponseEntity<LoginResponse> googleLoginWithIdToken(
+			@RequestHeader("Authorization") String authorizationHeader,
+			@RequestParam(required = false) String deviceId
+	) {
+		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(SocialProvider.GOOGLE, authorizationHeader, deviceId);
+		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+	}
+
+
 	/**
 	 * 로그아웃 처리
 	 * 특정 장치에서 로그아웃 시 해당 장치의 토큰 삭제
