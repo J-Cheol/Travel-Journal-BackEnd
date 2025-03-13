@@ -25,32 +25,33 @@ public class AuthService {
 	private final TokenService tokenService;
 	private final KakaoService kakaoService;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final AppleService appleService;
 	private final GoogleService googleService;
 
 	@Transactional
-	public LoginCombinedResponse handleLoginWithCode(SocialProvider socialProvider, String code, String deviceId) {
-		switch (socialProvider) {
-			case KAKAO:
-				return kakaoService.processKakaoLoginWithCode(code, deviceId, socialProvider);
-			case GOOGLE:
-				return googleService.processGoogleLoginWithCode(code, deviceId, socialProvider);
-			default:
-				throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
-		}
+	public LoginCombinedResponse handleLoginWithCode(SocialProvider socialProvider, String code, String deviceId,
+		String platform) {
+		return switch (socialProvider) {
+			case KAKAO -> kakaoService.processKakaoLoginWithCode(code, deviceId, socialProvider);
+			case APPLE -> appleService.processAppleLoginWithCode(code, deviceId, socialProvider, platform);
+            case GOOGLE-> googleService.processGoogleLoginWithCode(code, deviceId, socialProvider);
+
+            default -> throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
+		};
 	}
 
 	@Transactional
-	public LoginCombinedResponse handleLoginWithIdToken(SocialProvider socialProvider, String authorizationHeader, String deviceId) {
+	public LoginCombinedResponse handleLoginWithIdToken(SocialProvider socialProvider, String authorizationHeader,
+		String deviceId, String platform) {
 		String idToken = jwtTokenProvider.resolveToken(authorizationHeader);
 
-		switch (socialProvider) {
-			case KAKAO:
-				return kakaoService.processKakaoLoginWithIdToken(idToken, deviceId, socialProvider);
-			case GOOGLE:
-				return googleService.processGoogleLoginWithIdToken(idToken, deviceId, socialProvider);
-			default:
-				throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
-		}
+		return switch (socialProvider) {
+			case KAKAO -> kakaoService.processKakaoLoginWithIdToken(idToken, deviceId, socialProvider);
+			case APPLE -> appleService.processAppleLoginWithIdToken(idToken, deviceId, socialProvider, platform);
+            case GOOGLE-> googleService.processGoogleLoginWithIdToken(idToken, deviceId, socialProvider);
+
+            default -> throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
+		};
 	}
 
 	/**
