@@ -14,11 +14,12 @@ import com.traveljournal.domain.auth.dto.LoginResponse;
 import com.traveljournal.domain.auth.service.AuthService;
 import com.traveljournal.domain.auth.util.EnumUtils;
 import com.traveljournal.domain.member.entity.SocialProvider;
-import com.traveljournal.global.data.ApiResponse;
+import com.traveljournal.global.data.ResponseHandler;
 import com.traveljournal.global.security.util.SecurityUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -49,19 +50,26 @@ public class AuthController {
 		@Parameter(description = "디바이스 ID (선택 사항)")
 		@RequestParam(required = false) String deviceId,
 
-		@Parameter(description = "소셜로그인 제공자")
-		@PathVariable String socialProvider
+		@Parameter(description = "소셜로그인 제공자 (kakao, google, apple)")
+		@PathVariable String socialProvider,
+
+		@Parameter(description = "플랫폼 (web, ios, android)")
+		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform
 	) {
 		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
 
-		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithCode(socialProviderEnum,code, deviceId);
+		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithCode(socialProviderEnum, code,
+			deviceId, platform);
 
-		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+		return ResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(),
+			loginCombinedResponse.accessToken());
 	}
 
 	@Operation(
-		summary = "Kakao ID Token Login",
-		description = "카카오 ID 토큰을 이용한 로그인. Bearer 토큰을 Authorization 헤더에 포함해야 합니다."
+		summary = "Social ID Token Login",
+		description = """
+			ID 토큰을 이용한 로그인. Bearer 토큰을 Authorization 헤더에 포함해야 합니다.
+			<br> X-Platform 헤더에 (web, ios, android)를 포함해야 합니다."""
 	)
 	@PostMapping("/login/{socialProvider}/id-token")
 	public ResponseEntity<LoginResponse> kakaoLoginWithIdToken(
@@ -71,14 +79,19 @@ public class AuthController {
 		@Parameter(description = "디바이스 ID (선택 사항)")
 		@RequestParam(required = false) String deviceId,
 
-		@Parameter(description = "소셜로그인 제공자", example = "kakao, google, apple 셋 중 하나")
-		@PathVariable String socialProvider
+		@Parameter(description = "소셜로그인 제공자 (kakao, google, apple)")
+		@PathVariable String socialProvider,
+
+		@Parameter(description = "플랫폼 (web, ios, android)")
+		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform
 	) {
 		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
 
-		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(socialProviderEnum, authorizationHeader, deviceId);
+		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(socialProviderEnum,
+			authorizationHeader, deviceId, platform);
 
-		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+		return ResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(),
+			loginCombinedResponse.accessToken());
 	}
 
 	/**
@@ -88,7 +101,10 @@ public class AuthController {
 	@Operation(
 		summary = "Logout",
 		description = "특정 장치에서 로그아웃을 처리하고 해당 장치의 토큰을 삭제합니다.",
-		security = @SecurityRequirement(name = "bearer-key")
+		security = @SecurityRequirement(name = "bearer-key"),
+		responses = {
+			@ApiResponse(responseCode = "200", ref = "#/components/responses/Logout"),
+		}
 	)
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout(
@@ -97,6 +113,6 @@ public class AuthController {
 		Long memberId = SecurityUtil.getCurrentMemberId();
 
 		authService.logout(memberId, deviceId);
-		return ApiResponse.success("로그아웃되었습니다.");
+		return ResponseHandler.success("로그아웃 성공");
 	}
 }
