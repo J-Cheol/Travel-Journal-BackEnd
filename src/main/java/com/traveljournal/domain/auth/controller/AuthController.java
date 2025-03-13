@@ -104,8 +104,9 @@ public class AuthController {
 			@RequestParam String code,
 			@RequestParam(required = false) String deviceId
 	) {
-		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithCode(SocialProvider.GOOGLE, code, deviceId);
-		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+
+		LoginCombinedResponse loginCombinedResponse = authService.googleLoginWithCode(SocialProvider.GOOGLE, code, deviceId);
+		return ResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
 	}
 
 	// 구글 ID 토큰 로그인
@@ -114,8 +115,8 @@ public class AuthController {
 			@RequestHeader("Authorization") String authorizationHeader,
 			@RequestParam(required = false) String deviceId
 	) {
-		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(SocialProvider.GOOGLE, authorizationHeader, deviceId);
-		return ApiResponse.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
+		LoginCombinedResponse loginCombinedResponse = authService.googleLoginWithIdToken(SocialProvider.GOOGLE, authorizationHeader, deviceId);
+		return ResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
 	}
 
 

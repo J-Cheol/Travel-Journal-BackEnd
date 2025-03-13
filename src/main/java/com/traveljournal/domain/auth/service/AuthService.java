@@ -53,6 +53,26 @@ public class AuthService {
             default -> throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
 		};
 	}
+	@Transactional
+	public LoginCombinedResponse googleLoginWithCode(SocialProvider socialProvider, String code, String deviceId) {
+		return switch (socialProvider) {
+			case GOOGLE-> googleService.processGoogleLoginWithCode(code, deviceId, socialProvider);
+
+			default -> throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
+		};
+	}
+
+	@Transactional
+	public LoginCombinedResponse googleLoginWithIdToken(SocialProvider socialProvider, String authorizationHeader,
+														String deviceId) {
+		String idToken = jwtTokenProvider.resolveToken(authorizationHeader);
+
+		return switch (socialProvider) {
+			case GOOGLE-> googleService.processGoogleLoginWithIdToken(idToken, deviceId, socialProvider);
+
+			default -> throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
+		};
+	}
 
 	/**
 	 * 로그아웃 처리
