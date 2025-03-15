@@ -3,6 +3,7 @@ package com.traveljournal.domain.member.service;
 import java.util.Optional;
 import java.util.Random;
 
+import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,7 @@ public class MemberService {
 	public Member createNewMember(SocialMemberInfo socialMemberInfo, SocialProvider socialProvider) {
 
 		String randomNickname = generateRandomNickname();
-		
+
 		return Member.builder()
 			.email(socialMemberInfo.getEmail())
 			.nickname(randomNickname)
@@ -125,5 +126,33 @@ public class MemberService {
 		sb.append(randomNumber);
 
 		return "User" + sb.toString();
+	}
+
+	/**
+	 * 구글 회원정보를 바탕으로 회원 조회 또는 생성
+	 */
+	@Transactional
+	public Member findOrCreateMemberGoogle(GoogleMemberInfo googleMemberInfo, SocialProvider socialProvider) {
+		String email = googleMemberInfo.email();
+
+		Optional<Member> existingMember = findByEmail(email);
+
+		if (existingMember.isPresent()) {
+			return existingMember.get();
+		}
+
+		Member newMember = createNewMemberGoogle(googleMemberInfo, socialProvider);
+
+		return memberRepository.save(newMember);
+	}
+
+	public Member createNewMemberGoogle(GoogleMemberInfo googleMemberInfo, SocialProvider socialProvider) {
+		return Member.builder()
+				.email(googleMemberInfo.email())
+				.nickname(googleMemberInfo.name())
+				.profileImageUrl(googleMemberInfo.picture())
+				.accountScope(AccountScope.PUBLIC)
+				.socialProvider(socialProvider)
+				.build();
 	}
 }
