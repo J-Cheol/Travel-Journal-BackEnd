@@ -1,4 +1,4 @@
-package com.traveljournal.domain.auth.dto;
+package com.traveljournal.domain.auth.dto.google;
 
 import lombok.Builder;
 

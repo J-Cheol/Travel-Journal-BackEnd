@@ -3,7 +3,7 @@ package com.traveljournal.domain.member.service;
 import java.util.Optional;
 import java.util.Random;
 
-import com.traveljournal.domain.auth.dto.GoogleMemberInfo;
+import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

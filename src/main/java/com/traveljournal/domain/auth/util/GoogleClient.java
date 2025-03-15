@@ -1,15 +1,13 @@
 package com.traveljournal.domain.auth.util;
 
-import com.nimbusds.jose.JWSVerifier;
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
-import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.traveljournal.domain.auth.dto.GoogleIdTokenInfo;
-import com.traveljournal.domain.auth.dto.GoogleMemberInfo;
-import com.traveljournal.domain.auth.dto.GoogleTokenResponse;
+import com.traveljournal.domain.auth.dto.google.GoogleIdTokenInfo;
+import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
+import com.traveljournal.domain.auth.dto.google.GoogleTokenResponse;
 import com.traveljournal.global.config.GoogleOAuthConfig;
 import com.traveljournal.global.exception.ExternalApiException;
 import lombok.RequiredArgsConstructor;

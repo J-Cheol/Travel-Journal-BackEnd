@@ -109,6 +109,11 @@ public class AuthController {
 		return ResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken());
 	}
 
+	@Operation(
+			summary = "Google ID Token Login",
+			description = "ID 토큰을 이용한 로그인. Bearer 토큰을 Authorization 헤더에 포함해야 합니다."
+	)
+
 	// 구글 ID 토큰 로그인
 	@PostMapping("/login/google/id-token")
 	public ResponseEntity<LoginResponse> googleLoginWithIdToken(

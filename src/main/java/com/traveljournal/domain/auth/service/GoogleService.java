@@ -1,6 +1,9 @@
 package com.traveljournal.domain.auth.service;
 
 import com.traveljournal.domain.auth.dto.*;
+import com.traveljournal.domain.auth.dto.google.GoogleIdTokenInfo;
+import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
+import com.traveljournal.domain.auth.dto.google.GoogleTokenResponse;
 import com.traveljournal.domain.auth.util.GoogleClient;
 import com.traveljournal.domain.member.dto.TokenInfo;
 import com.traveljournal.domain.member.entity.Member;
