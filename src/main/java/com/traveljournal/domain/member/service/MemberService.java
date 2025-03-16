@@ -3,7 +3,6 @@ package com.traveljournal.domain.member.service;
 import java.util.Optional;
 import java.util.Random;
 
-import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +33,14 @@ public class MemberService {
 	}
 
 	/**
+	 * 소셜 고유 회원번호로 조회
+	 */
+	@Transactional(readOnly = true)
+	public Optional<Member> findByProviderId(String providerId) {
+		return memberRepository.findByProviderId(providerId);
+	}
+
+	/**
 	 * ID로 회원 조회
 	 */
 	@Transactional(readOnly = true)
@@ -47,9 +54,9 @@ public class MemberService {
 	 */
 	@Transactional
 	public Member findOrCreateMember(SocialMemberInfo socialMemberInfo, SocialProvider socialProvider) {
-		String email = socialMemberInfo.getEmail();
+		String providerId = socialMemberInfo.getId();
 
-		Optional<Member> existingMember = findByEmail(email);
+		Optional<Member> existingMember = findByProviderId(providerId);
 
 		if (existingMember.isPresent()) {
 			return existingMember.get();
@@ -65,6 +72,7 @@ public class MemberService {
 		String randomNickname = generateRandomNickname();
 
 		return Member.builder()
+			.providerId(socialMemberInfo.getId())
 			.email(socialMemberInfo.getEmail())
 			.nickname(randomNickname)
 			.profileImageUrl(socialMemberInfo.getProfileImageUrl())
@@ -117,7 +125,7 @@ public class MemberService {
 		sb.append(alphabet.charAt(random.nextInt(alphabet.length())));
 
 		// 나머지 글자 생성
-		for(int i = 1; i < length; i++) {
+		for (int i = 1; i < length; i++) {
 			sb.append(lowerAlphabet.charAt(random.nextInt(lowerAlphabet.length())));
 		}
 
@@ -126,33 +134,5 @@ public class MemberService {
 		sb.append(randomNumber);
 
 		return "User" + sb.toString();
-	}
-
-	/**
-	 * 구글 회원정보를 바탕으로 회원 조회 또는 생성
-	 */
-	@Transactional
-	public Member findOrCreateMemberGoogle(GoogleMemberInfo googleMemberInfo, SocialProvider socialProvider) {
-		String email = googleMemberInfo.email();
-
-		Optional<Member> existingMember = findByEmail(email);
-
-		if (existingMember.isPresent()) {
-			return existingMember.get();
-		}
-
-		Member newMember = createNewMemberGoogle(googleMemberInfo, socialProvider);
-
-		return memberRepository.save(newMember);
-	}
-
-	public Member createNewMemberGoogle(GoogleMemberInfo googleMemberInfo, SocialProvider socialProvider) {
-		return Member.builder()
-				.email(googleMemberInfo.email())
-				.nickname(googleMemberInfo.name())
-				.profileImageUrl(googleMemberInfo.picture())
-				.accountScope(AccountScope.PUBLIC)
-				.socialProvider(socialProvider)
-				.build();
 	}
 }

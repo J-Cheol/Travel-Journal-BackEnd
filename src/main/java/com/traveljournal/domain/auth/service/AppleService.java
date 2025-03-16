@@ -78,14 +78,16 @@ public class AppleService {
 	 * 4. JWT 토큰 생성 및 저장
 	 * 5. 로그인 응답 생성
 	 */
-	public LoginCombinedResponse processAppleLoginWithCode(String code, String deviceId, SocialProvider socialProvider, String platform) {
+	public LoginCombinedResponse processAppleLoginWithCode(String code, String deviceId, SocialProvider socialProvider,
+		String platform) {
 		// 애플 토큰 획득
 		AppleTokenResponse appleTokenResponse = getAppleToken(code);
 
 		return processAppleLoginWithIdToken(appleTokenResponse.idToken(), deviceId, socialProvider, platform);
 	}
 
-	public LoginCombinedResponse processAppleLoginWithIdToken(String idToken, String deviceId, SocialProvider socialProvider, String platform) {
+	public LoginCombinedResponse processAppleLoginWithIdToken(String idToken, String deviceId,
+		SocialProvider socialProvider, String platform) {
 		// ID 토큰 검증 및 사용자 정보 추출
 		AppleIdTokenInfo appleIdTokenInfo = verifyAndParseIdToken(idToken, platform);
 
@@ -212,7 +214,10 @@ public class AppleService {
 			// 사용자 정보 추출
 			String subject = claims.getSubject(); // 애플 사용자 ID
 			String email = claims.get("email", String.class);
-			boolean emailVerified = claims.get("email_verified", Boolean.class);
+
+			// email_verified 필드 null 체크 추가
+			Boolean emailVerifiedClaim = claims.get("email_verified", Boolean.class);
+			boolean emailVerified = emailVerifiedClaim != null && emailVerifiedClaim;
 
 			// 사용자 정보가 담긴 객체 반환
 			return new AppleIdTokenInfo(subject, email, emailVerified);
@@ -244,7 +249,7 @@ public class AppleService {
 
 	private TokenInfo createAndSaveTokens(Member member, String deviceId) {
 		// JWT 토큰 생성
-		TokenInfo tokenInfo = tokenService.createTokens(member.getEmail(), deviceId);
+		TokenInfo tokenInfo = tokenService.createTokens(member.getProviderId(), deviceId);
 
 		// 토큰 저장
 		tokenService.saveOrUpdateToken(member, tokenInfo.deviceId(), tokenInfo.refreshToken());
