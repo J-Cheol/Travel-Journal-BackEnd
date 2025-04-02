@@ -1,6 +1,7 @@
 package com.traveljournal.domain.auth.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,7 +20,6 @@ import com.traveljournal.global.security.util.SecurityUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +73,7 @@ public class AuthController {
 	)
 	@PostMapping("/login/{socialProvider}/id-token")
 	public ResponseEntity<LoginResponse> kakaoLoginWithIdToken(
-		@Parameter(description = "카카오에서 반환한 id_Token을 헤더에 담아주세요. Bearer 필요")
+		@Parameter(description = "소셜에서 반환한 id_Token을 헤더에 담아주세요. Bearer 필요")
 		@RequestHeader("Authorization") String authorizationHeader,
 
 		@Parameter(description = "디바이스 ID (선택 사항)")
@@ -83,12 +83,19 @@ public class AuthController {
 		@PathVariable String socialProvider,
 
 		@Parameter(description = "플랫폼 (web, ios, android)")
-		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform
-	) {
+		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform,
+
+		@Parameter(description = "소셜 로그인 Refresh_token")
+		@RequestHeader(value = "X-Refresh-Token", required = false) String refreshToken
+		) {
 		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
 
-		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(socialProviderEnum,
-			authorizationHeader, deviceId, platform);
+		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithIdToken(
+			socialProviderEnum,
+			authorizationHeader,
+			deviceId,
+			platform,
+			refreshToken);
 
 		return ApiResponseHandler.accessTokenResponse(loginCombinedResponse.LoginResponse(),
 			loginCombinedResponse.accessToken());
@@ -101,10 +108,7 @@ public class AuthController {
 	@Operation(
 		summary = "Logout",
 		description = "특정 장치에서 로그아웃을 처리하고 해당 장치의 토큰을 삭제합니다.",
-		security = @SecurityRequirement(name = "bearer-key"),
-		responses = {
-			@ApiResponse(responseCode = "200", ref = "#/components/responses/Logout"),
-		}
+		security = @SecurityRequirement(name = "bearer-key")
 	)
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout(
@@ -114,5 +118,16 @@ public class AuthController {
 
 		authService.logout(memberId, deviceId);
 		return ApiResponseHandler.deletedSuccess("로그아웃 성공");
+	}
+
+	@DeleteMapping("/{socialProvider}/unlink")
+	public ResponseEntity<?> unlinkSocialAccount(
+		@Parameter(description = "소셜로그인 제공자 (kakao, google, apple)")
+		@PathVariable String socialProvider) {
+		Long memberId = SecurityUtil.getCurrentMemberId();
+		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
+
+		authService.unlinkSocialAccount(memberId, socialProviderEnum);
+		return ApiResponseHandler.deletedSuccess("연결끊기 성공");
 	}
 }

@@ -8,17 +8,21 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.traveljournal.domain.Image.service.ImageService;
-import com.traveljournal.domain.member.dto.FirstLoginRequest;
 import com.traveljournal.domain.auth.dto.SocialMemberInfo;
+import com.traveljournal.domain.member.dto.MemberProfileResponse;
+import com.traveljournal.domain.member.dto.ProfileRequest;
 import com.traveljournal.domain.member.entity.AccountScope;
 import com.traveljournal.domain.member.entity.Member;
 import com.traveljournal.domain.member.entity.SocialProvider;
 import com.traveljournal.domain.member.repository.MemberRepository;
-import com.traveljournal.domain.member.dto.MemberProfileResponse;
+import com.traveljournal.domain.member.repository.SocialTokenRepository;
+import com.traveljournal.domain.member.repository.TokenRepository;
 import com.traveljournal.global.exception.ResourceNotFoundException;
 
 import io.jsonwebtoken.io.IOException;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,14 +33,11 @@ public class MemberService {
 
 	private final MemberRepository memberRepository;
 	private final ImageService imageService;
+	private final TokenRepository tokenRepository;
+	private final SocialTokenRepository socialTokenRepository;
 
-	/**
-	 * 이메일로 회원 조회
-	 */
-	@Transactional(readOnly = true)
-	public Optional<Member> findByEmail(String email) {
-		return memberRepository.findByEmail(email);
-	}
+	@PersistenceContext
+	private EntityManager entityManager;
 
 	/**
 	 * 소셜 고유 회원번호로 조회
@@ -79,7 +80,6 @@ public class MemberService {
 
 		return Member.builder()
 			.providerId(socialMemberInfo.getId())
-			.email(socialMemberInfo.getEmail())
 			.nickname(randomNickname)
 			.profileImageUrl(imageService.getDefaultProfileImageUrl())
 			.accountScope(AccountScope.PUBLIC)
@@ -87,11 +87,8 @@ public class MemberService {
 			.build();
 	}
 
-	/**
-	 * 첫 로그인 완료 처리
-	 */
 	@Transactional
-	public void completeFirstLogin(Long memberId, FirstLoginRequest request, MultipartFile profileImage) {
+	public void updateProfile(Long memberId, ProfileRequest request, MultipartFile profileImage) {
 		Member member = memberRepository.findById(memberId)
 			.orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
@@ -109,25 +106,13 @@ public class MemberService {
 		}
 
 		// 회원 정보 업데이트
-		member.completeFirstLoginWithProfileImage(
+		member.updateProfile(
 			request.getNickname(),
 			request.getAccountScope(),
 			profileImageUrl
 		);
 
 		memberRepository.save(member);
-	}
-
-	/**
-	 * 회원 프로필 업데이트
-	 */
-	@Transactional
-	public Member updateProfile(Long memberId, String nickname, String profileImageUrl,
-		java.time.LocalDate birthdate, AccountScope accountScope,
-		String phoneNumber) {
-		Member member = findById(memberId);
-		member.updateProfile(nickname, profileImageUrl, birthdate, accountScope, phoneNumber);
-		return member;
 	}
 
 	@Transactional(readOnly = true)
@@ -170,5 +155,25 @@ public class MemberService {
 		Member member = findById(memberId);
 
 		return MemberProfileResponse.of(member);
+	}
+
+	@Transactional
+	public void deleteMember(Long memberId) {
+		try {
+			Member member = findById(memberId);
+
+
+			tokenRepository.deleteAllByMemberId(memberId);
+			socialTokenRepository.deleteByMemberId(memberId);
+			memberRepository.delete(member);
+
+			memberRepository.flush();
+			entityManager.clear();
+
+			log.info("회원 삭제 완료. ID: {}", memberId);
+		} catch (Exception e) {
+			log.error("회원 삭제 중 오류 발생. ID: {}", memberId, e);
+			throw new RuntimeException("회원 삭제 중 오류가 발생했습니다.", e);
+		}
 	}
 }
