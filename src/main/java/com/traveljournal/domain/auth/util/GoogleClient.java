@@ -1,5 +1,14 @@
 package com.traveljournal.domain.auth.util;
 
+import java.net.URL;
+import java.text.ParseException;
+
+import org.springframework.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -10,18 +19,9 @@ import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
 import com.traveljournal.domain.auth.dto.google.GoogleTokenResponse;
 import com.traveljournal.global.config.GoogleOAuthConfig;
 import com.traveljournal.global.exception.ExternalApiException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-
-import java.net.URL;
-import java.text.ParseException;
 
 @Component
 @RequiredArgsConstructor
@@ -34,17 +34,6 @@ public class GoogleClient {
      * 구글 인증 코드로 토큰 정보 요청
      */
     public GoogleTokenResponse getGoogleToken(String code) {
-        /*
-        String url = "https://accounts.google.com/o/oauth2/v2/auth?";
-        String body = "code=" + code +
-                "&client_id=" + "${google.clientId}" +
-                "&client_secret=" + "${google.clientSecret}" +
-                "&redirect_uri=" + "${google.RedirectUri}" +
-                "&grant_type=authorization_code";
-
-        return restTemplate.postForObject(url, body, GoogleTokenResponse.class);
-
-         */
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -55,6 +44,8 @@ public class GoogleClient {
             params.add("client_secret", googleOAuthConfig.getClientSecret());
             params.add("redirect_uri", googleOAuthConfig.getRedirectUri());
             params.add("grant_type", "authorization_code");
+            params.add("access_type", "offline");  // 리프레시 토큰을 받기 위한 설정
+            params.add("prompt", "consent");
             log.info("🚀 Google OAuth 요청 - clientId: {}, clientSecret: {}, redirectUri: {}",
                     googleOAuthConfig.getClientId(),
                     googleOAuthConfig.getClientSecret(),
@@ -166,6 +157,16 @@ public class GoogleClient {
         } catch (Exception e) {
             log.error("ID Token 파싱 실패 : {}", e.getMessage());
             throw new ExternalApiException("ID Token 파싱에 실패했습니다." + e.getMessage());
+        }
+    }
+
+    public void revokeToken(String refreshToken) {
+        String revokeUrl = "https://oauth2.googleapis.com/revoke?token=" + refreshToken;
+
+        try {
+            restTemplate.postForObject(revokeUrl, null, String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("구글 계정 연결 해제 실패",e);
         }
     }
 }

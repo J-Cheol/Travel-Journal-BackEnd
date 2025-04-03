@@ -1,5 +1,9 @@
 package com.traveljournal.domain.auth.service;
 
+import java.time.LocalDateTime;
+
+import lombok.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.traveljournal.domain.auth.dto.LoginCombinedResponse;
@@ -12,9 +16,14 @@ import com.traveljournal.domain.member.dto.TokenInfo;
 import com.traveljournal.domain.member.entity.Member;
 import com.traveljournal.domain.member.entity.SocialProvider;
 import com.traveljournal.domain.member.service.MemberService;
+import com.traveljournal.domain.member.service.SocialTokenService;
 import com.traveljournal.domain.member.service.TokenService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,17 +32,20 @@ public class GoogleService {
 	private final TokenService tokenService;
 	private final MemberService memberService;
 	private final GoogleClient googleClient;
+	private final SocialTokenService socialTokenService;
+	private final RestTemplate restTemplate;
+
 
 	public LoginCombinedResponse processGoogleLoginWithCode(String code, String deviceId,
 		SocialProvider socialProvider) {
 		// 구글 토큰 획득
 		GoogleTokenResponse googleTokenResponse = googleClient.getGoogleToken(code);
 
-		return processGoogleLoginWithIdToken(googleTokenResponse.id_token(), deviceId, socialProvider);
+		return processGoogleLoginWithIdToken(googleTokenResponse.id_token(), deviceId, socialProvider, googleTokenResponse.refresh_token());
 	}
 
 	public LoginCombinedResponse processGoogleLoginWithIdToken(String idToken, String deviceId,
-		SocialProvider socialProvider) {
+		SocialProvider socialProvider, String refreshToken) {
 		// ID Token 으로 구글 사용자 정보 가져오기
 		GoogleIdTokenInfo googleIdTokenInfo = googleClient.getGoogleMemberInfoFromIdToken(idToken);
 
@@ -42,6 +54,15 @@ public class GoogleService {
 
 		// JWT 토큰 생성 및 저장
 		TokenInfo tokenInfo = createAndSaveTokens(member, deviceId);
+
+		if (refreshToken != null && !refreshToken.isEmpty()) {
+			LocalDateTime expiryDate = LocalDateTime.now().plusMonths(6);
+			socialTokenService.saveOrUpdateSocialToken(
+				member.getId(),
+				refreshToken,
+				socialProvider,
+				expiryDate);
+		}
 
 		// 로그인 응답 생성
 		return createLoginResponse(member, tokenInfo);
@@ -70,5 +91,35 @@ public class GoogleService {
 
 	private LoginCombinedResponse createLoginResponse(Member member, TokenInfo tokenInfo) {
 		return LoginCombinedResponse.of(LoginResponse.from(member, tokenInfo), tokenInfo.accessToken());
+	}
+
+
+	public void unlinkGoogleAccount(Long memberId) {
+		// 회원 정보 조회
+		Member member = memberService.findById(memberId);
+		// 회원의 구글 식별자(sub) 가져오기
+		String googleUserId = member.getProviderId();
+
+		if (googleUserId == null || googleUserId.isEmpty()) {
+			throw new RuntimeException("구글 계정 연결 정보가 없습니다.");
+		}
+
+		try {
+			// 리프레시 토큰 조회 및 처리
+			Optional<String> refreshTokenOpt = socialTokenService.getSocialRefreshToken(memberId, SocialProvider.GOOGLE);
+
+			if (refreshTokenOpt.isPresent()) {
+				String refreshToken = refreshTokenOpt.get();
+
+				googleClient.revokeToken(refreshToken);
+
+				memberService.deleteMember(memberId);
+			} else {
+					throw new RuntimeException("구글 계정 연결 해제 실패");
+				}
+
+		} catch (Exception e) {
+			throw new RuntimeException("구글 계정 연결 해제 실패: " + e.getMessage(), e);
+		}
 	}
 }
