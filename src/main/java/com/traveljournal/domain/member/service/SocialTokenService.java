@@ -41,6 +41,7 @@ public class SocialTokenService {
 				.refreshToken(refreshToken)
 				.provider(provider)
 				.expiryDate(expiryDate)
+				.providerId(member.getProviderId())
 				.build();
 			socialTokenRepository.save(token);
 		}

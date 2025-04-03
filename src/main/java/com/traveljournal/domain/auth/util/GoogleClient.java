@@ -1,5 +1,16 @@
 package com.traveljournal.domain.auth.util;
 
+import java.net.URL;
+import java.text.ParseException;
+
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
 import com.nimbusds.jose.crypto.RSASSAVerifier;
 import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
@@ -10,18 +21,9 @@ import com.traveljournal.domain.auth.dto.google.GoogleMemberInfo;
 import com.traveljournal.domain.auth.dto.google.GoogleTokenResponse;
 import com.traveljournal.global.config.GoogleOAuthConfig;
 import com.traveljournal.global.exception.ExternalApiException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestTemplate;
-
-import java.net.URL;
-import java.text.ParseException;
 
 @Component
 @RequiredArgsConstructor
@@ -55,6 +57,8 @@ public class GoogleClient {
             params.add("client_secret", googleOAuthConfig.getClientSecret());
             params.add("redirect_uri", googleOAuthConfig.getRedirectUri());
             params.add("grant_type", "authorization_code");
+            params.add("access_type", "offline");  // 리프레시 토큰을 받기 위한 설정
+            params.add("prompt", "consent");
             log.info("🚀 Google OAuth 요청 - clientId: {}, clientSecret: {}, redirectUri: {}",
                     googleOAuthConfig.getClientId(),
                     googleOAuthConfig.getClientSecret(),

@@ -1,5 +1,7 @@
 package com.traveljournal.domain.auth.service;
 
+import java.time.LocalDateTime;
+
 import org.springframework.stereotype.Service;
 
 import com.traveljournal.domain.auth.dto.LoginCombinedResponse;
@@ -12,6 +14,7 @@ import com.traveljournal.domain.member.dto.TokenInfo;
 import com.traveljournal.domain.member.entity.Member;
 import com.traveljournal.domain.member.entity.SocialProvider;
 import com.traveljournal.domain.member.service.MemberService;
+import com.traveljournal.domain.member.service.SocialTokenService;
 import com.traveljournal.domain.member.service.TokenService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,17 +26,18 @@ public class GoogleService {
 	private final TokenService tokenService;
 	private final MemberService memberService;
 	private final GoogleClient googleClient;
+	private final SocialTokenService socialTokenService;
 
 	public LoginCombinedResponse processGoogleLoginWithCode(String code, String deviceId,
 		SocialProvider socialProvider) {
 		// 구글 토큰 획득
 		GoogleTokenResponse googleTokenResponse = googleClient.getGoogleToken(code);
 
-		return processGoogleLoginWithIdToken(googleTokenResponse.id_token(), deviceId, socialProvider);
+		return processGoogleLoginWithIdToken(googleTokenResponse.id_token(), deviceId, socialProvider, googleTokenResponse.refresh_token());
 	}
 
 	public LoginCombinedResponse processGoogleLoginWithIdToken(String idToken, String deviceId,
-		SocialProvider socialProvider) {
+		SocialProvider socialProvider, String refreshToken) {
 		// ID Token 으로 구글 사용자 정보 가져오기
 		GoogleIdTokenInfo googleIdTokenInfo = googleClient.getGoogleMemberInfoFromIdToken(idToken);
 
@@ -42,6 +46,15 @@ public class GoogleService {
 
 		// JWT 토큰 생성 및 저장
 		TokenInfo tokenInfo = createAndSaveTokens(member, deviceId);
+
+		if (refreshToken != null && !refreshToken.isEmpty()) {
+			LocalDateTime expiryDate = LocalDateTime.now().plusMonths(6);
+			socialTokenService.saveOrUpdateSocialToken(
+				member.getId(),
+				refreshToken,
+				socialProvider,
+				expiryDate);
+		}
 
 		// 로그인 응답 생성
 		return createLoginResponse(member, tokenInfo);
