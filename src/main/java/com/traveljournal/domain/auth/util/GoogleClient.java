@@ -36,17 +36,6 @@ public class GoogleClient {
      * 구글 인증 코드로 토큰 정보 요청
      */
     public GoogleTokenResponse getGoogleToken(String code) {
-        /*
-        String url = "https://accounts.google.com/o/oauth2/v2/auth?";
-        String body = "code=" + code +
-                "&client_id=" + "${google.clientId}" +
-                "&client_secret=" + "${google.clientSecret}" +
-                "&redirect_uri=" + "${google.RedirectUri}" +
-                "&grant_type=authorization_code";
-
-        return restTemplate.postForObject(url, body, GoogleTokenResponse.class);
-
-         */
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);

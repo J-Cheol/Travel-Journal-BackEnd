@@ -63,6 +63,9 @@ public class AuthService {
 			case APPLE:
 				appleService.unlinkAppleAccount(memberId);
 				break;
+			case GOOGLE:
+				googleService.unlinkGoogleAccount(memberId);
+				break;
 			default:
 				throw new UnsupportedOperationException("지원되지 않는 소셜 로그인 제공자입니다.");
 		}

@@ -2,6 +2,8 @@ package com.traveljournal.domain.auth.service;
 
 import java.time.LocalDateTime;
 
+import lombok.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import com.traveljournal.domain.auth.dto.LoginCombinedResponse;
@@ -18,6 +20,10 @@ import com.traveljournal.domain.member.service.SocialTokenService;
 import com.traveljournal.domain.member.service.TokenService;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.client.RestTemplate;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +33,8 @@ public class GoogleService {
 	private final MemberService memberService;
 	private final GoogleClient googleClient;
 	private final SocialTokenService socialTokenService;
+	private final RestTemplate restTemplate;
+
 
 	public LoginCombinedResponse processGoogleLoginWithCode(String code, String deviceId,
 		SocialProvider socialProvider) {
@@ -83,5 +91,42 @@ public class GoogleService {
 
 	private LoginCombinedResponse createLoginResponse(Member member, TokenInfo tokenInfo) {
 		return LoginCombinedResponse.of(LoginResponse.from(member, tokenInfo), tokenInfo.accessToken());
+	}
+
+
+	public void unlinkGoogleAccount(Long memberId) {
+		// 회원 정보 조회
+		Member member = memberService.findById(memberId);
+		// 회원의 구글 식별자(sub) 가져오기
+		String googleUserId = member.getProviderId();
+
+		if (googleUserId == null || googleUserId.isEmpty()) {
+			throw new RuntimeException("구글 계정 연결 정보가 없습니다.");
+		}
+
+		try {
+			// 리프레시 토큰 조회 및 처리
+			Optional<String> refreshTokenOpt = socialTokenService.getSocialRefreshToken(memberId, SocialProvider.GOOGLE);
+
+			if (refreshTokenOpt.isPresent()) {
+				String refreshToken = refreshTokenOpt.get();
+
+				// 구글 연동 해제 요청 (토큰 폐기 API 호출)
+				String revokeUrl = "https://oauth2.googleapis.com/revoke?token=" + refreshToken;
+				ResponseEntity<String> response = restTemplate.postForEntity(revokeUrl, null, String.class);
+
+				if (response.getStatusCode().is2xxSuccessful()) {
+					// 회원 계정에서 구글 연결 정보 삭제
+					memberService.deleteMember(memberId);
+				} else {
+					throw new RuntimeException("구글 계정 연결 해제 실패");
+				}
+			} else {
+				throw new RuntimeException("구글 리프레시 토큰을 찾을 수 없습니다.");
+			}
+
+		} catch (Exception e) {
+			throw new RuntimeException("구글 계정 연결 해제 실패: " + e.getMessage(), e);
+		}
 	}
 }
