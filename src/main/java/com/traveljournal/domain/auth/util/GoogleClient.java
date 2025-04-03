@@ -3,9 +3,7 @@ package com.traveljournal.domain.auth.util;
 import java.net.URL;
 import java.text.ParseException;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -159,6 +157,14 @@ public class GoogleClient {
         } catch (Exception e) {
             log.error("ID Token 파싱 실패 : {}", e.getMessage());
             throw new ExternalApiException("ID Token 파싱에 실패했습니다." + e.getMessage());
+        }
+    }
+
+    public void revokeToken(String refreshToken) {
+        String revokeUrl = "https://oauth2.googleapis.com/revoke?token=" + refreshToken;
+        ResponseEntity<String> response = restTemplate.postForEntity(revokeUrl, null, String.class);
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("구글 계정 연결 해제 실패");
         }
     }
 }

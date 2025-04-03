@@ -111,19 +111,12 @@ public class GoogleService {
 			if (refreshTokenOpt.isPresent()) {
 				String refreshToken = refreshTokenOpt.get();
 
-				// 구글 연동 해제 요청 (토큰 폐기 API 호출)
-				String revokeUrl = "https://oauth2.googleapis.com/revoke?token=" + refreshToken;
-				ResponseEntity<String> response = restTemplate.postForEntity(revokeUrl, null, String.class);
+				googleClient.revokeToken(refreshToken);
 
-				if (response.getStatusCode().is2xxSuccessful()) {
-					// 회원 계정에서 구글 연결 정보 삭제
-					memberService.deleteMember(memberId);
-				} else {
+				memberService.deleteMember(memberId);
+			} else {
 					throw new RuntimeException("구글 계정 연결 해제 실패");
 				}
-			} else {
-				throw new RuntimeException("구글 리프레시 토큰을 찾을 수 없습니다.");
-			}
 
 		} catch (Exception e) {
 			throw new RuntimeException("구글 계정 연결 해제 실패: " + e.getMessage(), e);
