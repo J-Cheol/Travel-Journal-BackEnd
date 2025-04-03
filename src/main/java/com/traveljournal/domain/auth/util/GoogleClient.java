@@ -162,9 +162,11 @@ public class GoogleClient {
 
     public void revokeToken(String refreshToken) {
         String revokeUrl = "https://oauth2.googleapis.com/revoke?token=" + refreshToken;
-        ResponseEntity<String> response = restTemplate.postForEntity(revokeUrl, null, String.class);
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new RuntimeException("구글 계정 연결 해제 실패");
+
+        try {
+            restTemplate.postForObject(revokeUrl, null, String.class);
+        } catch (Exception e) {
+            throw new RuntimeException("구글 계정 연결 해제 실패",e);
         }
     }
 }
