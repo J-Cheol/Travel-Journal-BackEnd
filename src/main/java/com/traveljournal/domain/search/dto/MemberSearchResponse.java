@@ -6,7 +6,7 @@ import lombok.Builder;
 
 @Builder
 public record MemberSearchResponse (
-        Long id,
+        Long memberId,
         String nickname,
         String profileImageUrl,
         Long travelDiaryCount,
@@ -14,7 +14,7 @@ public record MemberSearchResponse (
 ) {
     public static MemberSearchResponse of(Long id, MemberProfileResponse profileResponse) {
         return MemberSearchResponse.builder()
-                .id(id)
+                .memberId(id)
                 .nickname(profileResponse.nickname())
                 .profileImageUrl(profileResponse.profileImageUrl())
                 .travelDiaryCount(profileResponse.travelDiaryCount())

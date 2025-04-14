@@ -21,15 +21,12 @@ public class MemberSearchService {
     @Transactional(readOnly = true)
     public Page<MemberSearchResponse> searchMembers(String keyword, Pageable pageable) {
 
-        if (keyword == null || keyword.isEmpty())
-            throw new IllegalArgumentException("검색어는 비어 있을 수 없습니다.");
-
         Page<Member> membersPage = memberSearchRepository.findByNicknameContaining(keyword, pageable);
 
         return membersPage.map(member ->
                 MemberSearchResponse.of(
                         member.getId(),
-                        MemberProfileResponse.of(member) // 여기서 바로 사용!
+                        MemberProfileResponse.of(member)
                 )
         );
     }
