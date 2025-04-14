@@ -41,11 +41,7 @@ public class SearchController {
         }
 
  */
-        // 검색 결과가 없을 경우, "검색 결과가 없습니다." 메시지와 함께 200 반환
         Page<MemberSearchResponse> result = memberSearchService.searchMembers(keyword, pageable);
-        if(result.isEmpty()) {
-            return ApiResponseHandler.onSuccess("검색 결과가 없습니다.");
-        }
 
         return ApiResponseHandler.getObjectSuccess(result);
     }
