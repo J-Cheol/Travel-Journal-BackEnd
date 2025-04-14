@@ -21,7 +21,7 @@ public class MemberSearchService {
     @Transactional(readOnly = true)
     public Page<MemberSearchResponse> searchMembers(String keyword, Pageable pageable) {
 
-        if (keyword == null || keyword.trim().isEmpty())
+        if (keyword == null || keyword.isEmpty())
             throw new IllegalArgumentException("검색어는 비어 있을 수 없습니다.");
 
         Page<Member> membersPage = memberSearchRepository.findByNicknameContaining(keyword, pageable);
