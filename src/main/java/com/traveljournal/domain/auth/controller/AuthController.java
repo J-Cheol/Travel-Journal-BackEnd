@@ -85,7 +85,7 @@ public class AuthController {
 		@Parameter(description = "플랫폼 (web, ios, android)")
 		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform,
 
-		@Parameter(description = "소셜 로그인 Refresh_token")
+		@Parameter(description = "소셜 로그인 Refresh_token, Bearer 필요")
 		@RequestHeader(value = "X-Refresh-Token", required = false) String refreshToken
 		) {
 		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
@@ -120,6 +120,11 @@ public class AuthController {
 		return ApiResponseHandler.deletedSuccess("로그아웃 성공");
 	}
 
+	@Operation(
+		summary = "Unlink",
+		description = "특정 회원의 연동을 해제합니다.",
+		security = @SecurityRequirement(name = "bearer-key")
+	)
 	@DeleteMapping("/{socialProvider}/unlink")
 	public ResponseEntity<?> unlinkSocialAccount(
 		@Parameter(description = "소셜로그인 제공자 (kakao, google, apple)")
