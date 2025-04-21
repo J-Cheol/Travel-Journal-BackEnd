@@ -1,16 +1,9 @@
 package com.traveljournal.domain.member.entity;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,6 +39,12 @@ public class Member {
 	private SocialProvider socialProvider;
 
 	private Boolean isFirstLogin = true;
+
+	@OneToMany(mappedBy = "fromUser", fetch = FetchType.LAZY)
+	private List<Follow> followings;
+
+	@OneToMany(mappedBy = "toUser", fetch = FetchType.LAZY)
+	private List<Follow> followers;
 
 	@PrePersist
 	public void prePersist() {
