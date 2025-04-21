@@ -1,5 +1,6 @@
 package com.traveljournal.domain.member.controller;
 
+import com.traveljournal.domain.member.dto.FollowCountResponse;
 import com.traveljournal.domain.member.dto.MemberProfileResponse;
 import com.traveljournal.domain.member.service.FollowService;
 import com.traveljournal.global.data.ApiResponseHandler;
@@ -71,16 +72,18 @@ public class FollowController {
             security = @SecurityRequirement(name = "bearer-key")
     )
     @GetMapping("/{memberId}/count")
-    public ResponseEntity<Map<String, Long>> getFollowCounts(@PathVariable Long memberId) {
+    public ResponseEntity<?> getFollowCounts(@PathVariable Long memberId) {
         long followers = followService.getFollowerCount(memberId);
         long followings = followService.getFollowingCount(memberId);
-        return ResponseEntity.ok(Map.of(
-                "followers", followers,
-                "followings", followings
-        ));
+        return ApiResponseHandler.getObjectSuccess(
+                new FollowCountResponse(followers, followings)
+        );
     }
 
-    @Operation(summary = "팔로우 여부 확인", description = "현재 로그인한 회원이 해당 회원을 팔로우하고 있는지 여부를 반환합니다.", security = @SecurityRequirement(name = "bearer-key"))
+    @Operation(
+            summary = "팔로우 여부 확인",
+            description = "현재 로그인한 회원이 해당 회원을 팔로우하고 있는지 여부를 반환합니다.",
+            security = @SecurityRequirement(name = "bearer-key"))
     @GetMapping("/{memberId}/is-following")
     public ResponseEntity<Boolean> isFollowing(@PathVariable Long memberId) {
         Long currentMemberId = SecurityUtil.getCurrentMemberId();

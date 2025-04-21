@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 public class FollowService {
     private final FollowRepository followRepository;
     private final MemberService memberService;
+    private Member getMemberById(Long id) {
+        return memberService.findById(id);
+    }
 
     @Transactional
     public void follow(Long fromUserId, Long toUserId) {
@@ -24,12 +27,11 @@ public class FollowService {
             throw new RuntimeException("자신을 팔로우 할 수 없습니다.");
         }
 
-        Member fromUser = memberService.findById(fromUserId);
-        Member toUser = memberService.findById(toUserId);
-
-        if(followRepository.existsByFromUserAndToUser(fromUser, toUser)) {
+        if(followRepository.existsByFromUserIdAndToUserId(fromUserId, toUserId)) {
             throw new RuntimeException("이미 팔로우한 사용자입니다.");
         }
+        Member fromUser = getMemberById(fromUserId);
+        Member toUser = getMemberById(toUserId);
 
         Follow follow = Follow.builder()
                 .fromUser(fromUser)
@@ -41,16 +43,13 @@ public class FollowService {
 
     @Transactional
     public void unfollow(Long fromUserId, Long toUserId) {
-        Member fromUser = memberService.findById(fromUserId);
-        Member toUser = memberService.findById(toUserId);
-
-        followRepository.deleteByFromUserAndToUser(fromUser, toUser);
+        followRepository.deleteByFromUserIdAndToUserId(fromUserId, toUserId);
     }
 
     // 내가 팔로우한 사람들
     @Transactional(readOnly = true)
     public List<MemberProfileResponse> getFollowings(Long memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = getMemberById(memberId);
         return followRepository.findByFromUser(member).stream()
                 .map(follow -> MemberProfileResponse.of(follow.getToUser()))
                 .collect(Collectors.toList());
@@ -59,7 +58,7 @@ public class FollowService {
     // 나를 팔로우하는 사람들
     @Transactional(readOnly = true)
     public List<MemberProfileResponse> getFollowers(Long memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = getMemberById(memberId);
         return followRepository.findByToUser(member).stream()
                 .map(follow -> MemberProfileResponse.of(follow.getFromUser()))
                 .collect(Collectors.toList());
@@ -67,21 +66,19 @@ public class FollowService {
 
     @Transactional(readOnly = true)
     public long getFollowerCount(Long memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = getMemberById(memberId);
         return followRepository.countByToUser(member);
     }
 
     @Transactional(readOnly = true)
     public long getFollowingCount(Long memberId) {
-        Member member = memberService.findById(memberId);
+        Member member = getMemberById(memberId);
         return followRepository.countByFromUser(member);
     }
 
     @Transactional(readOnly = true)
     public boolean isFollowing(Long followerId, Long followingId) {
-        Member follower = memberService.findById(followerId);
-        Member following = memberService.findById(followingId);
-        return followRepository.existsByFromUserAndToUser(follower, following);
+        return followRepository.existsByFromUserIdAndToUserId(followerId, followingId);
     }
 
 }
