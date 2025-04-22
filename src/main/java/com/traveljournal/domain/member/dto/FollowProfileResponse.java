@@ -8,8 +8,6 @@ public record FollowProfileResponse(
         Long memberId,
         String nickname,
         String profileImageUrl,
-        Long followerCount,
-        Long followingCount,
         Long travelDiaryCount,
         Long placesCount
 ) {
@@ -18,8 +16,6 @@ public record FollowProfileResponse(
                 .memberId(member.getId())
                 .nickname(member.getNickname())
                 .profileImageUrl(member.getProfileImageUrl())
-                .followerCount((long) member.getFollowings().size())
-                .followingCount((long) member.getFollowers().size())
                 .travelDiaryCount(36L)
                 .placesCount(88L)
                 .build();
