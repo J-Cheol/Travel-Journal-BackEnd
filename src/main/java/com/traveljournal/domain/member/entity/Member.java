@@ -40,10 +40,10 @@ public class Member {
 
 	private Boolean isFirstLogin = true;
 
-	@OneToMany(mappedBy = "fromUser", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "fromMember", fetch = FetchType.LAZY)
 	private List<Follow> followings;
 
-	@OneToMany(mappedBy = "toUser", fetch = FetchType.LAZY)
+	@OneToMany(mappedBy = "toMember", fetch = FetchType.LAZY)
 	private List<Follow> followers;
 
 	@PrePersist

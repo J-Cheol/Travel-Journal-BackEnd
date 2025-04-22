@@ -1,6 +1,7 @@
 package com.traveljournal.domain.member.controller;
 
 import com.traveljournal.domain.member.dto.FollowCountResponse;
+import com.traveljournal.domain.member.dto.FollowProfileResponse;
 import com.traveljournal.domain.member.dto.MemberProfileResponse;
 import com.traveljournal.domain.member.service.FollowService;
 import com.traveljournal.global.data.ApiResponseHandler;
@@ -8,6 +9,8 @@ import com.traveljournal.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,8 +55,9 @@ public class FollowController {
     )
 
     @GetMapping("/{memberId}/followings")
-    public ResponseEntity<?> getFollowings(@PathVariable("memberId") Long memberId) {
-        return ApiResponseHandler.getObjectSuccess(followService.getFollowings(memberId));
+    public ResponseEntity<Page<FollowProfileResponse>> getFollowings(@PathVariable("memberId") Long memberId,
+                                                                     Pageable pageable) {
+        return ApiResponseHandler.getObjectSuccess(followService.findFollowings(memberId, pageable));
     }
 
     @Operation(
@@ -62,8 +66,9 @@ public class FollowController {
             security = @SecurityRequirement(name = "bearer-key")
     )
     @GetMapping("/{memberId}/followers")
-    public ResponseEntity<?> getFollowers(@PathVariable Long memberId) {
-        return ApiResponseHandler.getObjectSuccess(followService.getFollowers(memberId));
+    public ResponseEntity<Page<FollowProfileResponse>> getFollowers(@PathVariable Long memberId,
+                                                                    Pageable pageable) {
+        return ApiResponseHandler.getObjectSuccess(followService.findFollowers(memberId, pageable));
     }
 
     @Operation(
@@ -72,7 +77,7 @@ public class FollowController {
             security = @SecurityRequirement(name = "bearer-key")
     )
     @GetMapping("/{memberId}/count")
-    public ResponseEntity<?> getFollowCounts(@PathVariable Long memberId) {
+    public ResponseEntity<FollowCountResponse> getFollowCounts(@PathVariable Long memberId) {
         long followers = followService.getFollowerCount(memberId);
         long followings = followService.getFollowingCount(memberId);
         return ApiResponseHandler.getObjectSuccess(
