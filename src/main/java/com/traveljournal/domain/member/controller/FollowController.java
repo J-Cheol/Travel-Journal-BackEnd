@@ -2,6 +2,7 @@ package com.traveljournal.domain.member.controller;
 
 import com.traveljournal.domain.member.dto.FollowCountResponse;
 import com.traveljournal.domain.member.dto.FollowProfileResponse;
+import com.traveljournal.domain.member.dto.FollowRequestResponse;
 import com.traveljournal.domain.member.dto.MemberProfileResponse;
 import com.traveljournal.domain.member.service.FollowService;
 import com.traveljournal.global.data.ApiResponseHandler;
@@ -47,7 +48,6 @@ public class FollowController {
         followService.unfollow(currentMemberId, memberId);
         return ApiResponseHandler.deletedSuccess("언팔로우 성공");
     }
-
     @Operation(
             summary = "특정 회원의 팔로잉 목록",
             description = "해당 회원이 팔로우하고 있는 사람들의 리스트를 조회합니다.",
@@ -93,6 +93,41 @@ public class FollowController {
     public ResponseEntity<Boolean> isFollowing(@PathVariable Long memberId) {
         Long currentMemberId = SecurityUtil.getCurrentMemberId();
         return ApiResponseHandler.getObjectSuccess(followService.isFollowing(currentMemberId, memberId));
+    }
+
+    @Operation(
+            summary = "팔로우 요청 수락",
+            description = "현재 로그인한 회원이 받은 팔로우 요청을 수락합니다.",
+            security = @SecurityRequirement(name = "bearer-key")
+    )
+    @PostMapping("/requests/{followId}/accept")
+    public ResponseEntity<?> acceptFollowRequest(@PathVariable Long followId) {
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
+        followService.acceptFollowRequest(currentMemberId, followId);
+        return ApiResponseHandler.onSuccess("팔로우 요청 수락 성공");
+    }
+
+    @Operation(
+            summary = "팔로우 요청 거절",
+            description = "현재 로그인한 회원이 받은 팔로우 요청을 거절합니다.",
+            security = @SecurityRequirement(name = "bearer-key")
+    )
+    @PostMapping("/requests/{followId}/reject")
+    public ResponseEntity<?> rejectFollowRequest(@PathVariable Long followId) {
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
+        followService.rejectFollowRequest(currentMemberId, followId);
+        return ApiResponseHandler.onSuccess("팔로우 요청 거절 성공");
+    }
+
+    @Operation(
+            summary = "회원에게 온 팔로우 요청 목록",
+            description = "현재 로그인한 회원에게 요청된 팔로우 요청 목록을 조회합니다",
+            security = @SecurityRequirement(name = "bearer-key")
+    )
+    @GetMapping("/requests")
+    public ResponseEntity<Page<FollowRequestResponse>> getFollowRequests(Pageable pageable) {
+        Long currentMemberId = SecurityUtil.getCurrentMemberId();
+        return ApiResponseHandler.getObjectSuccess(followService.findFollowRequests(currentMemberId,pageable));
     }
 }
 

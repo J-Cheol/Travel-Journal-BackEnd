@@ -23,4 +23,15 @@ public class Follow {
     @JoinColumn(name = "to_member")
     // toUser 내가 / 팔로우를 요청받은 USER
     private Member toMember;
+
+    @Enumerated(EnumType.STRING)
+    private RequestStatus requestStatus;
+
+    public void accept() {
+        this.requestStatus = RequestStatus.ACCEPTED;
+    }
+
+    public void reject() {
+        this.requestStatus = RequestStatus.REJECTED;
+    }
 }

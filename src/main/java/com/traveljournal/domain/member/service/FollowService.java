@@ -1,8 +1,10 @@
 package com.traveljournal.domain.member.service;
 
 import com.traveljournal.domain.member.dto.FollowProfileResponse;
+import com.traveljournal.domain.member.dto.FollowRequestResponse;
 import com.traveljournal.domain.member.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
+import com.traveljournal.domain.member.entity.RequestStatus;
 import com.traveljournal.domain.member.repository.FollowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -31,9 +33,18 @@ public class FollowService {
         Member fromMember = findMemberById(fromMemberId);
         Member toMember = findMemberById(toMemberId);
 
+        RequestStatus status;
+
+        switch (toMember.getAccountScope()) {
+            case PUBLIC -> status = RequestStatus.ACCEPTED;
+            case FRIENDS, PRIVATE -> status = RequestStatus.REQUESTED;
+            default -> throw new IllegalStateException("Unknown AccountScope");
+        }
+
         Follow follow = Follow.builder()
                 .fromMember(fromMember)
                 .toMember(toMember)
+                .requestStatus(status)
                 .build();
 
         followRepository.save(follow);
@@ -41,6 +52,9 @@ public class FollowService {
 
     @Transactional
     public void unfollow(Long fromMemberId, Long toMemberId) {
+        Follow follow = followRepository.findByFromMemberIdAndToMemberIdAndRequestStatus(
+                fromMemberId, toMemberId, RequestStatus.ACCEPTED
+        ).orElseThrow(()-> new RuntimeException("팔로우 관계가 존재하지 않거나, 아직 수락되지 않았습니다."));
         followRepository.deleteByFromMemberIdAndToMemberId(fromMemberId, toMemberId);
     }
 
@@ -48,7 +62,7 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<FollowProfileResponse> findFollowings(Long memberId, Pageable pageable) {
         Member member = findMemberById(memberId);
-        return followRepository.findByFromMember(member, pageable)
+        return followRepository.findByFromMemberAndRequestStatus(member, RequestStatus.ACCEPTED, pageable)
                 .map(follow -> FollowProfileResponse.of(follow.getToMember()));
     }
 
@@ -56,25 +70,44 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<FollowProfileResponse> findFollowers(Long memberId, Pageable pageable) {
         Member member = findMemberById(memberId);
-        return followRepository.findByToMember(member, pageable)
+        return followRepository.findByToMemberAndRequestStatus(member, RequestStatus.ACCEPTED, pageable)
                 .map(follow -> FollowProfileResponse.of(follow.getFromMember()));
     }
 
     @Transactional(readOnly = true)
     public long getFollowerCount(Long memberId) {
         Member member = findMemberById(memberId);
-        return followRepository.countByToMember(member);
+        return followRepository.countByToMemberAndRequestStatus(member, RequestStatus.ACCEPTED);
     }
 
     @Transactional(readOnly = true)
     public long getFollowingCount(Long memberId) {
         Member member = findMemberById(memberId);
-        return followRepository.countByFromMember(member);
+        return followRepository.countByFromMemberAndRequestStatus(member, RequestStatus.ACCEPTED);
     }
 
     @Transactional(readOnly = true)
     public boolean isFollowing(Long followerId, Long followingId) {
-        return followRepository.existsByFromMemberIdAndToMemberId(followerId, followingId);
+        return followRepository.existsByFromMemberIdAndToMemberIdAndRequestStatus(followerId, followingId, RequestStatus.ACCEPTED);
     }
 
+    @Transactional
+    public void acceptFollowRequest(Long memberId, Long followId) {
+        Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
+                .orElseThrow(()-> new RuntimeException("팔로우 요청이 존재하지 않습니다."));
+        follow.accept();
+    }
+
+    @Transactional
+    public void rejectFollowRequest(Long memberId, Long followId) {
+        Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
+                .orElseThrow(()-> new RuntimeException("팔로우 요청이 존재하지 않습니다."));
+        follow.reject();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FollowRequestResponse> findFollowRequests(Long memberId, Pageable pageable) {
+        return followRepository.findAllByToMemberIdAndRequestStatus(memberId, RequestStatus.REQUESTED, pageable)
+                .map(FollowRequestResponse::of);
+    }
 }
