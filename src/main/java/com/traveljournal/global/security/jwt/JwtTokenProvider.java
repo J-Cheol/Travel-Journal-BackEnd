@@ -13,12 +13,14 @@ import org.springframework.stereotype.Component;
 
 import com.traveljournal.global.config.AppConfig;
 import com.traveljournal.global.data.JwtValidateStatus;
+import com.traveljournal.global.exception.BadRequestException;
 import com.traveljournal.global.security.service.CustomUserDetailsService;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -105,6 +107,9 @@ public class JwtTokenProvider {
 	 *  DENIED 검증 실패
 	 */
 	public JwtValidateStatus getTokenValidationStatus(String token) {
+		if (token == null || token.isBlank()) {
+			return JwtValidateStatus.EMPTY;
+		}
 		try {
 			Jwts.parserBuilder()
 				.setSigningKey(secretKey)
@@ -113,8 +118,12 @@ public class JwtTokenProvider {
 			return JwtValidateStatus.ACCEPTED;
 		} catch (ExpiredJwtException e) {
 			return JwtValidateStatus.EXPIRED;
+		} catch (UnsupportedJwtException e) {
+			return JwtValidateStatus.UNSUPPORTED;
 		} catch (JwtException e) {
-			return JwtValidateStatus.DENIED;
+			return JwtValidateStatus.INVALID;
+		} catch (Exception e) {
+			return JwtValidateStatus.ERROR;
 		}
 	}
 
@@ -147,7 +156,7 @@ public class JwtTokenProvider {
 
 	private void validateAuthorizationHeader(String authorizationHeader) {
 		if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-			throw new IllegalArgumentException("유효한 Authorization 헤더가 필요합니다.");
+			throw new BadRequestException("유효한 Authorization 헤더가 필요합니다. : " + authorizationHeader);
 		}
 	}
 
