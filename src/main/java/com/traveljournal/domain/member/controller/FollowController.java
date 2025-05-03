@@ -33,8 +33,8 @@ public class FollowController {
     @PostMapping("/{memberId}")
     public ResponseEntity<?> followMember(@PathVariable("memberId") Long memberId) {
         Long currentMemberId = SecurityUtil.getCurrentMemberId();
-        followService.follow(currentMemberId, memberId);
-        return ApiResponseHandler.onSuccess("팔로우 성공");
+        String message = followService.follow(currentMemberId, memberId);
+        return ApiResponseHandler.onSuccess(message);
     }
 
     @Operation(

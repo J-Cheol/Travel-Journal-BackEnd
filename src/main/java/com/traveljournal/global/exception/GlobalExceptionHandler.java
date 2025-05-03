@@ -32,4 +32,9 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<String> handleMemberDelete(MemberDeleteException ex) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 	}
+
+	@ExceptionHandler(FollowException.class)
+	public ResponseEntity<String> handleFollowException(FollowException ex) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+	}
 }
