@@ -33,8 +33,18 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 	}
 
-	@ExceptionHandler(FollowException.class)
-	public ResponseEntity<String> handleFollowException(FollowException ex) {
+	@ExceptionHandler(FollowNotFoundException.class)
+	public ResponseEntity<String> handleFollowNotFound(FollowNotFoundException ex) {
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+	}
+
+	@ExceptionHandler(FollowBadRequestException.class)
+	public ResponseEntity<String> handeFollowBadRequest(FollowBadRequestException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+	}
+
+	@ExceptionHandler(FollowAccountScopeException.class)
+	public ResponseEntity<String> handeFollowAccountScope(FollowAccountScopeException ex) {
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 	}
 }

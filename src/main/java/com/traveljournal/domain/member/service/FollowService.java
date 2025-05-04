@@ -6,16 +6,14 @@ import com.traveljournal.domain.member.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
 import com.traveljournal.domain.member.entity.RequestStatus;
 import com.traveljournal.domain.member.repository.FollowRepository;
-import com.traveljournal.global.exception.BadRequestException;
-import com.traveljournal.global.exception.FollowException;
+import com.traveljournal.global.exception.FollowAccountScopeException;
+import com.traveljournal.global.exception.FollowBadRequestException;
+import com.traveljournal.global.exception.FollowNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,11 +24,11 @@ public class FollowService {
     @Transactional
     public String follow(Long fromMemberId, Long toMemberId) {
         if (fromMemberId.equals(toMemberId)) {
-            throw new FollowException("자신을 팔로우 할 수 없습니다.");
+            throw new FollowBadRequestException("자신을 팔로우 할 수 없습니다.");
         }
 
         if(followRepository.existsByFromMemberIdAndToMemberId(fromMemberId, toMemberId)) {
-            throw new FollowException("이미 팔로우한 사용자입니다.");
+            throw new FollowBadRequestException("이미 팔로우한 사용자입니다.");
         }
         Member fromMember = findMemberById(fromMemberId);
         Member toMember = findMemberById(toMemberId);
@@ -47,7 +45,7 @@ public class FollowService {
                 status = RequestStatus.REQUESTED;
                 message = "팔로우 요청 성공";
             }
-            default -> throw new IllegalStateException("Unknown AccountScope");
+            default -> throw new FollowAccountScopeException("알 수 없는 계정 범위입니다.");
         }
 
         Follow follow = Follow.builder()
@@ -64,7 +62,7 @@ public class FollowService {
     public void unfollow(Long fromMemberId, Long toMemberId) {
         Follow follow = followRepository.findByFromMemberIdAndToMemberIdAndRequestStatus(
                 fromMemberId, toMemberId, RequestStatus.ACCEPTED
-        ).orElseThrow(()-> new FollowException("팔로우 관계가 존재하지 않거나, 아직 수락되지 않았습니다."));
+        ).orElseThrow(()-> new FollowNotFoundException("팔로우 관계가 존재하지 않거나, 아직 수락되지 않았습니다."));
         followRepository.deleteByFromMemberIdAndToMemberId(fromMemberId, toMemberId);
     }
 
@@ -104,14 +102,14 @@ public class FollowService {
     @Transactional
     public void acceptFollowRequest(Long memberId, Long followId) {
         Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
-                .orElseThrow(()-> new FollowException("팔로우 요청이 존재하지 않습니다."));
+                .orElseThrow(()-> new FollowNotFoundException("팔로우 요청이 존재하지 않습니다."));
         follow.accept();
     }
 
     @Transactional
     public void rejectFollowRequest(Long memberId, Long followId) {
         Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
-                .orElseThrow(()-> new FollowException("팔로우 요청이 존재하지 않습니다."));
+                .orElseThrow(()-> new FollowNotFoundException("팔로우 요청이 존재하지 않습니다."));
         follow.reject();
     }
 
