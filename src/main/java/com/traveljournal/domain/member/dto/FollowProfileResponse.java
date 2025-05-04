@@ -1,6 +1,7 @@
 package com.traveljournal.domain.member.dto;
 
 import com.traveljournal.domain.member.entity.Member;
+import com.traveljournal.domain.member.entity.RequestStatus;
 import lombok.Builder;
 
 @Builder

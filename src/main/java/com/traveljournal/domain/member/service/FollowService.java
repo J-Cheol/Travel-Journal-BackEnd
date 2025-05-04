@@ -1,17 +1,19 @@
 package com.traveljournal.domain.member.service;
 
 import com.traveljournal.domain.member.dto.FollowProfileResponse;
+import com.traveljournal.domain.member.dto.FollowRequestResponse;
 import com.traveljournal.domain.member.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
+import com.traveljournal.domain.member.entity.RequestStatus;
 import com.traveljournal.domain.member.repository.FollowRepository;
+import com.traveljournal.global.exception.FollowAccountScopeException;
+import com.traveljournal.global.exception.FollowBadRequestException;
+import com.traveljournal.global.exception.FollowNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,27 +22,47 @@ public class FollowService {
     private final MemberService memberService;
     private Member findMemberById(Long id) {return memberService.findById(id);}
     @Transactional
-    public void follow(Long fromMemberId, Long toMemberId) {
+    public String follow(Long fromMemberId, Long toMemberId) {
         if (fromMemberId.equals(toMemberId)) {
-            throw new RuntimeException("자신을 팔로우 할 수 없습니다.");
+            throw new FollowBadRequestException("자신을 팔로우 할 수 없습니다.");
         }
 
         if(followRepository.existsByFromMemberIdAndToMemberId(fromMemberId, toMemberId)) {
-            throw new RuntimeException("이미 팔로우한 사용자입니다.");
+            throw new FollowBadRequestException("이미 팔로우한 사용자입니다.");
         }
         Member fromMember = findMemberById(fromMemberId);
         Member toMember = findMemberById(toMemberId);
 
+        RequestStatus status;
+        String message;
+
+        switch (toMember.getAccountScope()) {
+            case PUBLIC -> {
+                status = RequestStatus.ACCEPTED;
+                message = "팔로우 성공";
+            }
+            case FRIENDS, PRIVATE -> {
+                status = RequestStatus.REQUESTED;
+                message = "팔로우 요청 성공";
+            }
+            default -> throw new FollowAccountScopeException("알 수 없는 계정 범위입니다.");
+        }
+
         Follow follow = Follow.builder()
                 .fromMember(fromMember)
                 .toMember(toMember)
+                .requestStatus(status)
                 .build();
 
         followRepository.save(follow);
+        return message;
     }
 
     @Transactional
     public void unfollow(Long fromMemberId, Long toMemberId) {
+        Follow follow = followRepository.findByFromMemberIdAndToMemberIdAndRequestStatus(
+                fromMemberId, toMemberId, RequestStatus.ACCEPTED
+        ).orElseThrow(()-> new FollowNotFoundException("팔로우 관계가 존재하지 않거나, 아직 수락되지 않았습니다."));
         followRepository.deleteByFromMemberIdAndToMemberId(fromMemberId, toMemberId);
     }
 
@@ -48,7 +70,7 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<FollowProfileResponse> findFollowings(Long memberId, Pageable pageable) {
         Member member = findMemberById(memberId);
-        return followRepository.findByFromMember(member, pageable)
+        return followRepository.findByFromMemberAndRequestStatus(member, RequestStatus.ACCEPTED, pageable)
                 .map(follow -> FollowProfileResponse.of(follow.getToMember()));
     }
 
@@ -56,25 +78,44 @@ public class FollowService {
     @Transactional(readOnly = true)
     public Page<FollowProfileResponse> findFollowers(Long memberId, Pageable pageable) {
         Member member = findMemberById(memberId);
-        return followRepository.findByToMember(member, pageable)
+        return followRepository.findByToMemberAndRequestStatus(member, RequestStatus.ACCEPTED, pageable)
                 .map(follow -> FollowProfileResponse.of(follow.getFromMember()));
     }
 
     @Transactional(readOnly = true)
     public long getFollowerCount(Long memberId) {
         Member member = findMemberById(memberId);
-        return followRepository.countByToMember(member);
+        return followRepository.countByToMemberAndRequestStatus(member, RequestStatus.ACCEPTED);
     }
 
     @Transactional(readOnly = true)
     public long getFollowingCount(Long memberId) {
         Member member = findMemberById(memberId);
-        return followRepository.countByFromMember(member);
+        return followRepository.countByFromMemberAndRequestStatus(member, RequestStatus.ACCEPTED);
     }
 
     @Transactional(readOnly = true)
     public boolean isFollowing(Long followerId, Long followingId) {
-        return followRepository.existsByFromMemberIdAndToMemberId(followerId, followingId);
+        return followRepository.existsByFromMemberIdAndToMemberIdAndRequestStatus(followerId, followingId, RequestStatus.ACCEPTED);
     }
 
+    @Transactional
+    public void acceptFollowRequest(Long memberId, Long followId) {
+        Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
+                .orElseThrow(()-> new FollowNotFoundException("팔로우 요청이 존재하지 않습니다."));
+        follow.accept();
+    }
+
+    @Transactional
+    public void rejectFollowRequest(Long memberId, Long followId) {
+        Follow follow = followRepository.findByIdAndToMemberId(followId, memberId)
+                .orElseThrow(()-> new FollowNotFoundException("팔로우 요청이 존재하지 않습니다."));
+        follow.reject();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<FollowRequestResponse> findFollowRequests(Long memberId, Pageable pageable) {
+        return followRepository.findAllByToMemberIdAndRequestStatus(memberId, RequestStatus.REQUESTED, pageable)
+                .map(FollowRequestResponse::of);
+    }
 }
