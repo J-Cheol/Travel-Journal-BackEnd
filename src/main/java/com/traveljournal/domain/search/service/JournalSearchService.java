@@ -1,4 +1,4 @@
-package com.traveljournal.domain.journal.service;
+package com.traveljournal.domain.search.service;
 
 import java.util.List;
 import java.util.Map;
@@ -14,36 +14,27 @@ import com.traveljournal.domain.hashtag.entity.HashTag;
 import com.traveljournal.domain.journal.dto.JournalListResponse;
 import com.traveljournal.domain.journal.entity.Journal;
 import com.traveljournal.domain.journal.repository.JournalRepository;
-import com.traveljournal.global.util.RegionGroupUtil;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class JournalService {
-
+public class JournalSearchService {
 	private final JournalRepository journalRepository;
 
 	@Transactional(readOnly = true)
-	public Page<JournalListResponse> findJournalsByRegionWithPaging(Long memberId, String regionName, Pageable pageable) {
-		List<String> regionList = RegionGroupUtil.getRegionList(regionName);
-		Page<Long> journalIdPage = journalRepository.findIdsByMemberIdAndRegionIn(memberId, regionList, pageable);
-		return getJournalListResponses(pageable, journalIdPage);
-	}
+	public Page<JournalListResponse> searchJournals(String keyword, Pageable pageable) {
 
-	@Transactional(readOnly = true)
-	public Page<JournalListResponse> findAllJournalsByMemberId(Long memberId, Pageable pageable) {
-		Page<Long> journalIdPage = journalRepository.findIdsByMemberId(memberId, pageable);
-		return getJournalListResponses(pageable, journalIdPage);
-	}
-
-	private Page<JournalListResponse> getJournalListResponses(Pageable pageable, Page<Long> journalIdPage) {
+		Page<Long> journalIdPage = journalRepository.findIdsByTitleOrRegionOrHashTagContaining(keyword, pageable);
 		List<Long> journalIds = journalIdPage.getContent();
 
 		List<Journal> journals = journalRepository.findAllByIdInFetchJoin(journalIds);
 
-		Map<Long, Journal> journalMap = journals.stream().collect(Collectors.toMap(Journal::getId, j -> j));
-		List<Journal> sortedJournals = journalIds.stream().map(journalMap::get).toList();
+		Map<Long, Journal> journalMap = journals.stream()
+			.collect(Collectors.toMap(Journal::getId, j -> j));
+		List<Journal> sortedJournals = journalIds.stream()
+			.map(journalMap::get)
+			.toList();
 
 		return new PageImpl<>(
 			sortedJournals.stream()

@@ -1,4 +1,4 @@
-package com.traveljournal.domain.place.service;
+package com.traveljournal.domain.search.service;
 
 import java.util.List;
 import java.util.Map;
@@ -13,36 +13,26 @@ import org.springframework.transaction.annotation.Transactional;
 import com.traveljournal.domain.place.dto.PlaceListResponse;
 import com.traveljournal.domain.place.entity.Place;
 import com.traveljournal.domain.place.repository.PlaceRepository;
-import com.traveljournal.global.util.RegionGroupUtil;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class PlaceService {
+public class PlaceSearchService {
 
 	private final PlaceRepository placeRepository;
 
 	@Transactional(readOnly = true)
-	public Page<PlaceListResponse> findPlacesByRegionWithPaging(Long memberId, String regionName, Pageable pageable) {
-		List<String> regionList = RegionGroupUtil.getRegionList(regionName);
-
-		Page<Long> placeIdPage = placeRepository.findIdsByMemberIdAndRegionIn(memberId, regionList, pageable);
-		return getPlaceListResponses(pageable, placeIdPage);
-	}
-
-	@Transactional(readOnly = true)
-	public Page<PlaceListResponse> findAllPlacesByMemberId(Long memberId, Pageable pageable) {
-		Page<Long> placeIdPage = placeRepository.findIdsByMemberId(memberId, pageable);
-		return getPlaceListResponses(pageable, placeIdPage);
-	}
-
-	private Page<PlaceListResponse> getPlaceListResponses(Pageable pageable, Page<Long> placeIdPage) {
+	public Page<PlaceListResponse> searchPlaces(String keyword, Pageable pageable) {
+		Page<Long> placeIdPage = placeRepository.findIdsByTitleOrRegionContaining(keyword, pageable);
 		List<Long> placeIds = placeIdPage.getContent();
 		List<Place> places = placeRepository.findAllByIdIn(placeIds);
 
-		Map<Long, Place> placeMap = places.stream().collect(Collectors.toMap(Place::getId, p -> p));
-		List<Place> sortedPlaces = placeIds.stream().map(placeMap::get).toList();
+		Map<Long, Place> placeMap = places.stream()
+			.collect(Collectors.toMap(Place::getId, p -> p));
+		List<Place> sortedPlaces = placeIds.stream()
+			.map(placeMap::get)
+			.toList();
 
 		return new PageImpl<>(
 			sortedPlaces.stream()
