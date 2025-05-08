@@ -32,4 +32,17 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
 
 	@Query("SELECT j.id FROM Journal j WHERE j.member.id = :memberId")
 	Page<Long> findIdsByMemberId(@Param("memberId") Long memberId, Pageable pageable);
+
+	@Query("SELECT j.id FROM Journal j WHERE j.member.id IN :memberIds ORDER BY j.createdAt DESC")
+	Page<Long> findIdsByMemberIdInOrderByCreatedAtDesc(@Param("memberIds") List<Long> memberIds, Pageable pageable);
+
+	@Query("SELECT j.id FROM Journal j WHERE j.member.id IN :memberIds AND j.id NOT IN :excludeJournalIds ORDER BY j.createdAt DESC")
+	Page<Long> findIdsByMemberIdInAndIdNotInOrderByCreatedAtDesc(@Param("memberIds") List<Long> memberIds, @Param("excludeJournalIds") List<Long> excludeJournalIds, Pageable pageable);
+
+	@Query(value = "SELECT j.id FROM journal j WHERE j.member_id NOT IN (:memberIds) AND j.id NOT IN (:excludeJournalIds) ORDER BY RAND() LIMIT :limit", nativeQuery = true)
+	List<Long> findRandomIdsByMemberIdNotInAndIdNotIn(
+		@Param("memberIds") List<Long> memberIds,
+		@Param("excludeJournalIds") List<Long> excludeJournalIds,
+		@Param("limit") int limit
+	);
 }
