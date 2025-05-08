@@ -10,6 +10,7 @@ import java.util.stream.Stream;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -90,5 +91,12 @@ public class ExploreFeedService {
 		if (!entities.isEmpty()) {
 			exploreSeenJournalRepository.saveAll(entities);
 		}
+	}
+
+	@Scheduled(cron = "0 0 3 * * *")
+	@Transactional
+	public void deleteOldSeenJournals() {
+		LocalDateTime cutoff = LocalDateTime.now().minusDays(3);
+		exploreSeenJournalRepository.deleteAllBySeenAtBefore(cutoff);
 	}
 }
