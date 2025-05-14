@@ -72,8 +72,9 @@ public class Member {
 	}
 
 	@Builder
-	public Member(String providerId, String nickname, String profileImageUrl,
+	public Member(Long id, String providerId, String nickname, String profileImageUrl,
 		AccountScope accountScope, SocialProvider socialProvider) {
+		this.id = id;
 		this.providerId = providerId;
 		this.nickname = nickname;
 		this.profileImageUrl = profileImageUrl;

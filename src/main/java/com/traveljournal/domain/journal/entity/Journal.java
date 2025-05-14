@@ -1,11 +1,13 @@
 package com.traveljournal.domain.journal.entity;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.traveljournal.domain.hashtag.entity.HashTag;
 import com.traveljournal.domain.member.entity.Member;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -17,6 +19,8 @@ import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -24,6 +28,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "Journal")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Journal {
 
 	@Id
@@ -37,6 +43,10 @@ public class Journal {
 	private Long days;
 	private String startDate;
 	private String endDate;
+	private LocalDateTime createdAt;
+
+	@Column(length = 512)
+	private String thumbnailUrl;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "member_id", nullable = false)

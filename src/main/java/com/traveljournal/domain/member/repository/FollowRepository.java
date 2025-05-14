@@ -1,14 +1,17 @@
 package com.traveljournal.domain.member.repository;
 
-import com.traveljournal.domain.member.entity.Follow;
-import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.entity.RequestStatus;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
-import java.util.List;
-import java.util.Optional;
+import com.traveljournal.domain.member.entity.Follow;
+import com.traveljournal.domain.member.entity.Member;
+import com.traveljournal.domain.member.entity.RequestStatus;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
     // 내가 팔로우 하는 사람들
@@ -23,4 +26,10 @@ public interface FollowRepository extends JpaRepository<Follow, Long> {
     Page<Follow> findAllByToMemberIdAndRequestStatus(Long toMemberId, RequestStatus requestStatus, Pageable pageable);
     Optional<Follow> findByIdAndToMemberId(Long followId, Long toMemberId);
     Optional<Follow> findByFromMemberIdAndToMemberIdAndRequestStatus(Long fromMemberId, Long toMemberId, RequestStatus requestStatus);
+
+    @Query("SELECT f.fromMember.id FROM Follow f WHERE f.toMember.id = :followerId")
+    List<Long> findFollowedIdsByFollowerId(@Param("followerId") Long followerId);
+
+    @Query("SELECT f.toMember.id FROM Follow f WHERE f.fromMember.id = :memberId AND f.requestStatus = 'ACCEPTED'")
+    List<Long> findAcceptedToMemberIdsByFromMemberId(@Param("memberId") Long memberId);
 }

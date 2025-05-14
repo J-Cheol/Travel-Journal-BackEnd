@@ -10,6 +10,9 @@ spring:
       hibernate:
         jdbc:
           time_zone: Asia/Seoul
+          batch_size: 100
+        order_updates: true
+        order_insert: true
   servlet:
     multipart:
       max-file-size: 5MB # 한개 파일의 최대 사이즈 (default: 1MB)
