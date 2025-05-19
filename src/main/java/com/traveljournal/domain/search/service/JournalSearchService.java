@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.traveljournal.domain.member.repository.BlockRepository;
+import com.traveljournal.global.security.util.SecurityUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class JournalSearchService {
 	private final JournalRepository journalRepository;
+	private final BlockRepository blockRepository;
 
 	@Transactional(readOnly = true)
 	public Page<JournalListResponse> searchJournals(String keyword, Pageable pageable) {
@@ -48,6 +51,40 @@ public class JournalSearchService {
 					journal.getEndDate()
 				))
 				.toList(),
+			pageable,
+			journalIdPage.getTotalElements()
+		);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<JournalListResponse> searchJournalsByBlockedMembers(String keyword, Pageable pageable) {
+
+		Long currentMemberId = SecurityUtil.getCurrentMemberId();
+		List<Long> blockedIds = blockRepository.findBlockedMemberIdsByBlockerId(currentMemberId);
+
+		Page<Long> journalIdPage = journalRepository.findIdsByKeywordExcludingBlockedMembers(keyword, blockedIds, pageable);
+		List<Long> journalIds = journalIdPage.getContent();
+		List<Journal> journals = journalRepository.findAllByIdInFetchJoin(journalIds);
+
+		Map<Long, Journal> journalMap = journals.stream()
+				.collect(Collectors.toMap(Journal::getId, j -> j));
+		List<Journal> sortedJournals = journalIds.stream()
+				.map(journalMap::get)
+				.toList();
+
+
+		return new PageImpl<>(
+			sortedJournals.stream()
+					.map(journal -> new JournalListResponse(
+							journal.getId(),
+							journal.getHashTags().stream().map(HashTag::getTagName).toList(),
+							journal.getTitle(),
+							journal.getNights(),
+							journal.getDays(),
+							journal.getStartDate(),
+							journal.getEndDate()
+					))
+					.toList(),
 			pageable,
 			journalIdPage.getTotalElements()
 		);

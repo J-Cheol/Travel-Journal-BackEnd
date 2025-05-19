@@ -45,4 +45,14 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
 		@Param("excludeJournalIds") List<Long> excludeJournalIds,
 		@Param("limit") int limit
 	);
+
+	@Query("""
+    SELECT DISTINCT j.id
+    FROM Journal j
+    LEFT JOIN j.hashTags h
+    WHERE (j.title LIKE %:keyword%
+       OR j.region LIKE %:keyword%
+       OR h.tagName LIKE %:keyword%) AND j.member.id NOT IN :blockedMemberIds
+    """)
+	Page<Long> findIdsByKeywordExcludingBlockedMembers(@Param("keyword") String keyword, @Param("blockedMemberIds") List<Long> blockedMemberIds, Pageable pageable);
 }

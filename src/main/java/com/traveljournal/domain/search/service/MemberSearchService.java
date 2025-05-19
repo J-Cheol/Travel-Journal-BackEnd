@@ -2,6 +2,7 @@ package com.traveljournal.domain.search.service;
 
 import com.traveljournal.domain.member.dto.MemberProfileResponse;
 import com.traveljournal.domain.member.entity.Member;
+import com.traveljournal.domain.member.repository.BlockRepository;
 import com.traveljournal.domain.search.dto.MemberSearchResponse;
 import com.traveljournal.domain.search.repository.MemberSearchRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 public class MemberSearchService {
 
     private final MemberSearchRepository memberSearchRepository;
+    private final BlockRepository blockRepository;
 
     @Transactional(readOnly = true)
     public Page<MemberSearchResponse> searchMembers(String keyword, Pageable pageable) {
@@ -30,4 +32,17 @@ public class MemberSearchService {
                 )
         );
     }
+
+    @Transactional(readOnly = true)
+    public Page<MemberSearchResponse> searchByNickname(String keyword, Pageable pageable, Long currentMemberId) {
+
+        // currentMemberId를 넘겨서 repository 쿼리에서 차단 회원 자동 제외
+        Page<Member> members = memberSearchRepository.findByNicknameContainingAndIdNotIn(keyword, currentMemberId, pageable);
+
+        return members.map(member -> {
+            MemberProfileResponse profile = MemberProfileResponse.of(member);
+            return MemberSearchResponse.of(member.getId(), profile);
+        });
+    }
+
 }
