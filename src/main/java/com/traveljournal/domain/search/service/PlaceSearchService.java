@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.traveljournal.domain.member.repository.BlockRepository;
+import com.traveljournal.global.security.util.SecurityUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 public class PlaceSearchService {
 
 	private final PlaceRepository placeRepository;
+	private final BlockRepository blockRepository;
 
 	@Transactional(readOnly = true)
 	public Page<PlaceListResponse> searchPlaces(String keyword, Pageable pageable) {
@@ -45,6 +48,36 @@ public class PlaceSearchService {
 				.toList(),
 			pageable,
 			placeIdPage.getTotalElements()
+		);
+	}
+
+	@Transactional(readOnly = true)
+	public Page<PlaceListResponse> searchPlacesByBlockedMembers(String keyword, Pageable pageable) {
+
+		Long currentMemberId = SecurityUtil.getCurrentMemberId();
+		List<Long> blockedIds = blockRepository.findBlockedMemberIdsByBlockerId(currentMemberId);
+
+		Page<Long> placeIdPage = placeRepository.findIdsByKeywordExcludingBlockedMembers(keyword, blockedIds, pageable);
+		List<Long> placeIds = placeIdPage.getContent();
+		List<Place> places = placeRepository.findAllByIdIn(placeIds);
+
+		Map<Long, Place> placeMap = places.stream()
+				.collect(Collectors.toMap(Place::getId, p -> p));
+		List<Place> sortedPlaces = placeIds.stream()
+				.map(placeMap::get)
+				.toList();
+
+		return new PageImpl<>(
+				sortedPlaces.stream()
+						.map(place -> new PlaceListResponse(
+								place.getId(),
+								place.getTitle(),
+								place.getRegion(),
+								place.getThumbnailUrl()
+						))
+						.toList(),
+				pageable,
+				placeIdPage.getTotalElements()
 		);
 	}
 }

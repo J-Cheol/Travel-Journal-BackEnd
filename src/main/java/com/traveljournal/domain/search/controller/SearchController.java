@@ -64,7 +64,7 @@ public class SearchController {
 		@RequestParam String keyword,
 		@ParameterObject @PageableDefault Pageable pageable) {
 
-		Page<PlaceListResponse> result = placeSearchService.searchPlaces(keyword, pageable);
+		Page<PlaceListResponse> result = placeSearchService.searchPlacesByBlockedMembers(keyword, pageable);
 
 		return ApiResponseHandler.getObjectSuccess(result);
 	}
@@ -80,7 +80,7 @@ public class SearchController {
 		@RequestParam String keyword,
 		@ParameterObject @PageableDefault Pageable pageable) {
 
-		Page<JournalListResponse> result = journalSearchService.searchJournals(keyword, pageable);
+		Page<JournalListResponse> result = journalSearchService.searchJournalsByBlockedMembers(keyword, pageable);
 
 		return ApiResponseHandler.getObjectSuccess(result);
 	}

@@ -27,5 +27,9 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
 	@Query("SELECT p.id FROM Place p WHERE p.member.id = :memberId")
 	Page<Long> findIdsByMemberId(@Param("memberId") Long memberId, Pageable pageable);
 
-
+	@Query("""
+		SELECT p.id
+		FROM Place p
+		WHERE (p.title LIKE %:keyword% OR p.region LIKE %:keyword%) AND p.member.id NOT IN :blockedMemberIds""")
+	Page<Long> findIdsByKeywordExcludingBlockedMembers(@Param("keyword") String keyword,@Param("blockedMemberIds") List<Long> blockedMemberIds, Pageable pageable);
 }

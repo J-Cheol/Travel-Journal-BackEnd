@@ -17,6 +17,6 @@ public interface BlockRepository extends JpaRepository<Block, Long> {
     Page<Block> findAllByBlocker(Member blocker, Pageable pageable);
     void deleteByBlockerAndBlocked(Member blocker, Member blocked);
 
-    @Query("SELECT b.blocked.id FROM Block b WHERE b.blocker = :blocker")
-    List<Long> findBlockedMemberIdsByBlocker(@Param("blocker") Member blocker);
+    @Query("SELECT b.blocked.id FROM Block b WHERE b.blocker.id = :blockerId")
+    List<Long> findBlockedMemberIdsByBlockerId(@Param("blockerId") Long blockerId);
 }
