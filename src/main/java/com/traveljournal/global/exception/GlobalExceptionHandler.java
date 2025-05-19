@@ -47,4 +47,9 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<String> handeFollowAccountScope(FollowAccountScopeException ex) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 	}
+
+	@ExceptionHandler(BlockBadRequestException.class)
+	public ResponseEntity<String> handleBlockBadRequest(BlockBadRequestException ex) {
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+	}
 }
