@@ -1,5 +1,6 @@
 package com.traveljournal.domain.search.controller;
 
+import com.traveljournal.global.security.util.SecurityUtil;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,14 +46,9 @@ public class SearchController {
 	public ResponseEntity<Page<MemberSearchResponse>> searchMembers(
 		@RequestParam @NotBlank(message = "검색어는 비어 있을 수 없습니다.") String keyword,
 		@PageableDefault(sort = "nickname") Pageable pageable) {
-/*
-        // 키워드가 비어 있을 경우, 409 상태 코드로 실패 메시지 반환
-        if (keyword == null || keyword.isEmpty()) {
-            return ApiResponseHandler.onFailure("검색어는 비어 있을 수 없습니다.");
-        }
 
- */
-		Page<MemberSearchResponse> result = memberSearchService.searchMembers(keyword, pageable);
+		Long currentMemberId = SecurityUtil.getCurrentMemberId();
+		Page<MemberSearchResponse> result = memberSearchService.searchByNickname(keyword, pageable, currentMemberId);
 
 		return ApiResponseHandler.getObjectSuccess(result);
 	}

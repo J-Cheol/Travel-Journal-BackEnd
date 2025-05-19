@@ -28,7 +28,7 @@ public class BlockService {
         Member blocked = findMemberById(blockedId);
 
         if (blockRepository.existsByBlockerAndBlocked(blocker, blocked)) {
-            throw new BlockBadRequestException("이미 차단한 사용자입니다,");
+            throw new BlockBadRequestException("이미 차단한 사용자입니다.");
         }
 
         Block block = Block.builder()
