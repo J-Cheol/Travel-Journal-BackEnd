@@ -1,7 +1,7 @@
-package com.traveljournal.domain.member.controller;
+package com.traveljournal.domain.block.controller;
 
-import com.traveljournal.domain.member.dto.BlockResponse;
-import com.traveljournal.domain.member.service.BlockService;
+import com.traveljournal.domain.block.dto.BlockResponse;
+import com.traveljournal.domain.block.service.BlockService;
 import com.traveljournal.domain.member.service.MemberService;
 import com.traveljournal.global.data.ApiResponseHandler;
 import com.traveljournal.global.security.util.SecurityUtil;

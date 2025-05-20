@@ -20,7 +20,7 @@ import com.traveljournal.domain.explore.repository.ExploreSeenJournalRepository;
 import com.traveljournal.domain.journal.entity.Journal;
 import com.traveljournal.domain.journal.repository.JournalRepository;
 import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.repository.FollowRepository;
+import com.traveljournal.domain.follow.repository.FollowRepository;
 
 import lombok.RequiredArgsConstructor;
 

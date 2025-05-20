@@ -1,11 +1,9 @@
-package com.traveljournal.domain.member.dto;
+package com.traveljournal.domain.follow.dto;
 
-import com.traveljournal.domain.member.entity.Follow;
+import com.traveljournal.domain.follow.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.entity.RequestStatus;
-import lombok.AllArgsConstructor;
+import com.traveljournal.domain.follow.entity.RequestStatus;
 import lombok.Builder;
-import lombok.Getter;
 
 @Builder
 public record FollowRequestResponse(

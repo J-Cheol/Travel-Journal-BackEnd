@@ -1,4 +1,4 @@
-package com.traveljournal.domain.member.dto;
+package com.traveljournal.domain.block.dto;
 
 import com.traveljournal.domain.member.entity.Member;
 import lombok.Builder;

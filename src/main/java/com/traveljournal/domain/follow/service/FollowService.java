@@ -1,18 +1,19 @@
-package com.traveljournal.domain.member.service;
+package com.traveljournal.domain.follow.service;
 
 import java.util.List;
 
+import com.traveljournal.domain.member.service.MemberService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.traveljournal.domain.member.dto.FollowProfileResponse;
-import com.traveljournal.domain.member.dto.FollowRequestResponse;
-import com.traveljournal.domain.member.entity.Follow;
+import com.traveljournal.domain.follow.dto.FollowProfileResponse;
+import com.traveljournal.domain.follow.dto.FollowRequestResponse;
+import com.traveljournal.domain.follow.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.entity.RequestStatus;
-import com.traveljournal.domain.member.repository.FollowRepository;
+import com.traveljournal.domain.follow.entity.RequestStatus;
+import com.traveljournal.domain.follow.repository.FollowRepository;
 import com.traveljournal.global.exception.FollowAccountScopeException;
 import com.traveljournal.global.exception.FollowBadRequestException;
 import com.traveljournal.global.exception.FollowNotFoundException;

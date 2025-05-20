@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.traveljournal.domain.member.repository.BlockRepository;
+import com.traveljournal.domain.block.repository.BlockRepository;
 import com.traveljournal.global.security.util.SecurityUtil;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;

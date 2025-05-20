@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.traveljournal.domain.follow.entity.Follow;
 import com.traveljournal.domain.journal.entity.Journal;
 import com.traveljournal.domain.place.entity.Place;
 
