@@ -36,7 +36,7 @@ public class GoogleClient {
     private static final String GOOGLE_JWK_URL = "https://www.googleapis.com/oauth2/v3/certs";
 
     // 구글 인증 코드로 토큰 정보 요청
-    public GoogleTokenResponse getGoogleToken(String code) {
+    public GoogleTokenResponse getGoogleToken(String code, Boolean loginTest) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -45,7 +45,13 @@ public class GoogleClient {
             params.add("code", code);
             params.add("client_id", googleOAuthConfig.getClientId());
             params.add("client_secret", googleOAuthConfig.getClientSecret());
-            params.add("redirect_uri", googleOAuthConfig.getRedirectUri());
+            if (loginTest == true) {
+                params.add("redirect_uri", googleOAuthConfig.getTestRedirectUri());
+            }
+            else {
+                params.add("redirect_uri", googleOAuthConfig.getRedirectUri());
+
+            }
             params.add("grant_type", "authorization_code");
             params.add("access_type", "offline");
             params.add("prompt", "consent");

@@ -31,11 +31,11 @@ public class GoogleService {
 	private final SocialTokenService socialTokenService;
 
 	public LoginCombinedResponse processGoogleLoginWithCode(String code, String deviceId,
-		SocialProvider socialProvider, String platform) {
+		SocialProvider socialProvider, String platform, Boolean loginTest) {
 		if (code == null || code.isBlank()) {
 			throw new BadRequestException("구글 인증 코드가 비어 있습니다.");
 		}
-		GoogleTokenResponse googleTokenResponse = googleClient.getGoogleToken(code);
+		GoogleTokenResponse googleTokenResponse = googleClient.getGoogleToken(code, loginTest);
 
 		return processGoogleLoginWithIdToken(googleTokenResponse.id_token(), deviceId, socialProvider, platform, googleTokenResponse.refresh_token());
 	}
