@@ -1,7 +1,6 @@
-package com.traveljournal.domain.member.dto;
+package com.traveljournal.domain.follow.dto;
 
 import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.entity.RequestStatus;
 import lombok.Builder;
 
 @Builder

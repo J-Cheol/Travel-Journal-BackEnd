@@ -1,5 +1,6 @@
-package com.traveljournal.domain.member.entity;
+package com.traveljournal.domain.block.entity;
 
+import com.traveljournal.domain.member.entity.Member;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

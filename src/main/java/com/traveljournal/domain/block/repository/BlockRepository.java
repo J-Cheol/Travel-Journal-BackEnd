@@ -1,6 +1,6 @@
-package com.traveljournal.domain.member.repository;
+package com.traveljournal.domain.block.repository;
 
-import com.traveljournal.domain.member.entity.Block;
+import com.traveljournal.domain.block.entity.Block;
 import com.traveljournal.domain.member.entity.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

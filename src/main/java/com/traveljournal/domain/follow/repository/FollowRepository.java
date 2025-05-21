@@ -1,4 +1,4 @@
-package com.traveljournal.domain.member.repository;
+package com.traveljournal.domain.follow.repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -9,9 +9,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import com.traveljournal.domain.member.entity.Follow;
+import com.traveljournal.domain.follow.entity.Follow;
 import com.traveljournal.domain.member.entity.Member;
-import com.traveljournal.domain.member.entity.RequestStatus;
+import com.traveljournal.domain.follow.entity.RequestStatus;
 
 public interface FollowRepository extends JpaRepository<Follow, Long> {
     // 내가 팔로우 하는 사람들

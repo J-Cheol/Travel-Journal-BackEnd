@@ -1,10 +1,9 @@
-package com.traveljournal.domain.member.controller;
+package com.traveljournal.domain.follow.controller;
 
 import com.traveljournal.domain.member.dto.FollowCountResponse;
-import com.traveljournal.domain.member.dto.FollowProfileResponse;
-import com.traveljournal.domain.member.dto.FollowRequestResponse;
-import com.traveljournal.domain.member.dto.MemberProfileResponse;
-import com.traveljournal.domain.member.service.FollowService;
+import com.traveljournal.domain.follow.dto.FollowProfileResponse;
+import com.traveljournal.domain.follow.dto.FollowRequestResponse;
+import com.traveljournal.domain.follow.service.FollowService;
 import com.traveljournal.global.data.ApiResponseHandler;
 import com.traveljournal.global.security.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,9 +13,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/follow")
