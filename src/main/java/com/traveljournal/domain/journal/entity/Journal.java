@@ -58,5 +58,7 @@ public class Journal {
 		joinColumns = @JoinColumn(name = "journal_id"),
 		inverseJoinColumns = @JoinColumn(name = "hashtag_id")
 	)
-	private List<HashTag>  hashTags = new ArrayList<>();
+
+	@Builder.Default
+	private List<HashTag> hashTags = new ArrayList<>();
 }
