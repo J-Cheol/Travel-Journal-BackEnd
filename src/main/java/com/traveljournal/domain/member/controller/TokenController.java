@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/tokens")
-@Tag(name = "token API", description = "토큰 관련 API")
+@Tag(name = "Token API", description = "토큰 관련 API")
 public class TokenController {
 
 	private final TokenService tokenService;

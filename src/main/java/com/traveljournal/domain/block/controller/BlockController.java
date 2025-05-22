@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.traveljournal.domain.block.dto.BlockResponse;
 import com.traveljournal.domain.block.service.BlockService;
-import com.traveljournal.domain.member.service.MemberService;
 import com.traveljournal.global.data.ApiResponseHandler;
 import com.traveljournal.global.security.util.SecurityUtil;
 
@@ -23,14 +22,15 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/block")
+@Tag(name = "Block API", description = "차단 기능 API")
 public class BlockController {
 	private final BlockService blockService;
-	private final MemberService memberService;
 
 	@Operation(
 		summary = "회원 차단",

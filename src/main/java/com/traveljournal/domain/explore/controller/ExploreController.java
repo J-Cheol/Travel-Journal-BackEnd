@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/explore")
-@Tag(name = "Explore API")
+@Tag(name = "Explore API", description = "탐험하기 기능 API")
 public class ExploreController {
 
 	private final ExploreFeedService exploreFeedService;

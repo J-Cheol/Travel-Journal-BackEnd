@@ -28,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/member")
-@Tag(name = "member API", description = "회원 관련 API")
+@Tag(name = "Member API", description = "회원 API")
 public class MemberController {
 	private final MemberService memberService;
 
