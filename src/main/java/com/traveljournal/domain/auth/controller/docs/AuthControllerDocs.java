@@ -59,7 +59,8 @@ public interface AuthControllerDocs {
 		@Parameter(description = "소셜로그인에서 반환한 인증 코드") String code,
 		@Parameter(description = "디바이스 ID (선택 사항)") String deviceId,
 		@Parameter(description = "소셜로그인 제공자 (kakao, google, apple)") String socialProvider,
-		@Parameter(description = "플랫폼 (web, ios, android)") String platform
+		@Parameter(description = "플랫폼 (web, ios, android)") String platform,
+		@Parameter(description = "로그인 테스트용, true로 설정 시 테스트가 가능합니다.") Boolean loginTest
 	);
 
 	@Operation(

@@ -23,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/v1")
 @RequiredArgsConstructor
-@Tag(name = "journal API", description = "여행일지 API")
+@Tag(name = "Journal API", description = "여행일지 API")
 public class JournalController {
 
 	private final JournalService journalService;

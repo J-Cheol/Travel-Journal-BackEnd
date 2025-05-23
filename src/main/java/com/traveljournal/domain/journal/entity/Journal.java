@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -58,5 +59,17 @@ public class Journal {
 		joinColumns = @JoinColumn(name = "journal_id"),
 		inverseJoinColumns = @JoinColumn(name = "hashtag_id")
 	)
-	private List<HashTag>  hashTags = new ArrayList<>();
+
+	@Builder.Default
+	private List<HashTag> hashTags = new ArrayList<>();
+
+	@Column(name = "random_index")
+	private Double randomIndex;
+
+	@PrePersist
+	public void prePersist() {
+		if (randomIndex == null) {
+			randomIndex = Math.random();
+		}
+	}
 }

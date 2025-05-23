@@ -36,11 +36,12 @@ public class AuthController implements AuthControllerDocs {
 		@RequestParam String code,
 		@RequestParam(required = false) String deviceId,
 		@PathVariable String socialProvider,
-		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform
+		@RequestHeader(value = "X-Platform", defaultValue = "web") String platform,
+		@RequestHeader(value = "Login-Test", required = false, defaultValue = "false") Boolean loginTest
 	) {
 		SocialProvider socialProviderEnum = EnumUtils.toSocialProvider(socialProvider);
 		LoginCombinedResponse loginCombinedResponse = authService.handleLoginWithCode(
-			socialProviderEnum, code, deviceId, platform
+			socialProviderEnum, code, deviceId, platform, loginTest
 		);
 		return ApiResponseHandler.accessTokenResponse(
 			loginCombinedResponse.LoginResponse(), loginCombinedResponse.accessToken()

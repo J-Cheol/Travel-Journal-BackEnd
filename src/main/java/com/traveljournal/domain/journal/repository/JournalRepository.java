@@ -39,7 +39,7 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
 	@Query("SELECT j.id FROM Journal j WHERE j.member.id IN :memberIds AND j.id NOT IN :excludeJournalIds ORDER BY j.createdAt DESC")
 	Page<Long> findIdsByMemberIdInAndIdNotInOrderByCreatedAtDesc(@Param("memberIds") List<Long> memberIds, @Param("excludeJournalIds") List<Long> excludeJournalIds, Pageable pageable);
 
-	@Query(value = "SELECT j.id FROM journal j WHERE j.member_id NOT IN (:memberIds) AND j.id NOT IN (:excludeJournalIds) ORDER BY RAND() LIMIT :limit", nativeQuery = true)
+	@Query(value = "SELECT j.id FROM journal j WHERE j.member_id NOT IN (:memberIds) AND j.id NOT IN (:excludeJournalIds) ORDER BY j.random_index LIMIT :limit", nativeQuery = true)
 	List<Long> findRandomIdsByMemberIdNotInAndIdNotIn(
 		@Param("memberIds") List<Long> memberIds,
 		@Param("excludeJournalIds") List<Long> excludeJournalIds,
@@ -55,4 +55,29 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
        OR h.tagName LIKE %:keyword%) AND j.member.id NOT IN :blockedMemberIds
     """)
 	Page<Long> findIdsByKeywordExcludingBlockedMembers(@Param("keyword") String keyword, @Param("blockedMemberIds") List<Long> blockedMemberIds, Pageable pageable);
+
+	@Query(value = "SELECT j.id FROM journal j ORDER BY j.random_index LIMIT :limit", nativeQuery = true)
+	List<Long> findRandomAll(@Param("limit") int limit);
+
+	@Query(value = """
+    SELECT j.id FROM journal j 
+    WHERE j.member_id NOT IN (:memberIds) AND j.id NOT IN (:excludeJournalIds) 
+    AND j.id >= (SELECT FLOOR(RAND() * (SELECT MAX(id) FROM journal)))
+    ORDER BY j.id
+    LIMIT :limit
+    """, nativeQuery = true)
+	List<Long> findOptimizedRandomIdsByMemberIdNotIn(
+		@Param("memberIds") List<Long> memberIds,
+		@Param("excludeJournalIds") List<Long> excludeJournalIds,
+		@Param("limit") int limit
+	);
+
+	@Query(value = """
+    SELECT j.id FROM journal j 
+    WHERE j.id >= (SELECT FLOOR(RAND() * (SELECT MAX(id) FROM journal)))
+    ORDER BY j.id
+    LIMIT :limit
+    """, nativeQuery = true)
+	List<Long> findOptimizedRandomAll(@Param("limit") int limit);
+
 }

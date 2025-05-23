@@ -25,14 +25,14 @@ public class AuthService {
 
 	@Transactional
 	public LoginCombinedResponse handleLoginWithCode(SocialProvider socialProvider, String code, String deviceId,
-		String platform) {
+		String platform, Boolean loginTest) {
 
 		validateCode(code);
 
 		return switch (socialProvider) {
 			case KAKAO -> kakaoService.processKakaoLoginWithCode(code, deviceId, socialProvider);
 			case APPLE -> appleService.processAppleLoginWithCode(code, deviceId, socialProvider, platform);
-			case GOOGLE -> googleService.processGoogleLoginWithCode(code, deviceId, socialProvider, platform);
+			case GOOGLE -> googleService.processGoogleLoginWithCode(code, deviceId, socialProvider, platform, loginTest);
 		};
 	}
 

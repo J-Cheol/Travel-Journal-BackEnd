@@ -18,6 +18,10 @@ import com.traveljournal.global.data.ApiResponseHandler;
 import com.traveljournal.global.security.util.SecurityUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/v1/explore")
-@Tag(name = "Explore API")
+@Tag(name = "Explore API", description = "탐험하기 기능 API")
 public class ExploreController {
 
 	private final ExploreFeedService exploreFeedService;
@@ -54,12 +58,19 @@ public class ExploreController {
 		description = "탐험하기 여행일지를 보았을때 기능입니다.",
 		security = @SecurityRequirement(name = "bearer-key")
 	)
+	@ApiResponses({
+		@ApiResponse(
+			responseCode = "200",
+			description = "성공",
+			content = @Content(mediaType = "text/plain", examples = @ExampleObject(name = "요청 성공", value = "요청 성공"))
+		)
+	})
 	@PostMapping("/journals/seen")
 	public ResponseEntity<?> markJournalAsSeen(
 		@RequestBody JournalIdListRequest request
 	) {
 		Long memberId = SecurityUtil.getCurrentMemberId();
 		exploreFeedService.markJournalsAsSeen(memberId, request.journalIds());
-		return ApiResponseHandler.onSuccess("");
+		return ApiResponseHandler.onSuccess("요청 성공");
 	}
 }
