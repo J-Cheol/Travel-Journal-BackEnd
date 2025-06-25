@@ -16,10 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.traveljournal.domain.Image.entity.ImageInfo;
-import com.traveljournal.domain.Image.repository.ImageInfoRepository;
+import com.traveljournal.domain.Image.service.ImageInfoService;
 import com.traveljournal.domain.Image.service.ImageService;
+import com.traveljournal.domain.block.service.BlockService;
 import com.traveljournal.domain.hashtag.entity.HashTag;
-import com.traveljournal.domain.hashtag.repository.HashTagRepository;
+import com.traveljournal.domain.hashtag.service.HashTagService;
 import com.traveljournal.domain.journal.dto.JournalCreateRequest;
 import com.traveljournal.domain.journal.dto.JournalDayRequest;
 import com.traveljournal.domain.journal.dto.JournalDaySpotRequest;
@@ -32,7 +33,9 @@ import com.traveljournal.domain.member.entity.Member;
 import com.traveljournal.domain.member.service.MemberService;
 import com.traveljournal.domain.photo.dto.PhotoMetadataRequest;
 import com.traveljournal.domain.photo.entity.Photo;
-import com.traveljournal.domain.photo.repository.PhotoRepository;
+import com.traveljournal.domain.photo.service.PhotoService;
+import com.traveljournal.domain.statistics.service.MemberRegionStatisticsService;
+import com.traveljournal.domain.statistics.service.MemberStatisticsService;
 import com.traveljournal.global.exception.BadRequestException;
 import com.traveljournal.global.util.RegionGroupUtil;
 
@@ -43,23 +46,33 @@ import lombok.RequiredArgsConstructor;
 public class JournalService {
 
 	private final JournalRepository journalRepository;
-	private final HashTagRepository hashTagRepository;
-	private final ImageInfoRepository imageInfoRepository;
+	private final HashTagService hashTagService;
+	private final ImageInfoService imageInfoService;
+	private final MemberRegionStatisticsService memberRegionStatisticsService;
 	private final ImageService imageService;
-	private final PhotoRepository photoRepository;
 	private final MemberService memberService;
+	private final BlockService blockService;
+	private final MemberStatisticsService memberStatisticsService;
+	private final PhotoService photoService;
 
 	@Transactional(readOnly = true)
-	public Page<JournalListResponse> findJournalsByRegionWithPaging(Long memberId, String regionName,
+	public Page<JournalListResponse> findJournalsByRegionWithPaging(Long memberId, Long viewerId, String regionName,
 		Pageable pageable) {
+		blockService.validateNotBlocked(viewerId, memberId);
+
 		List<String> regionList = RegionGroupUtil.getRegionList(regionName);
-		Page<Long> journalIdPage = journalRepository.findIdsByMemberIdAndRegionIn(memberId, regionList, pageable);
+		List<Long> blockedIds = blockService.getBlockedMemberIds(viewerId);
+
+		Page<Long> journalIdPage = journalRepository.findIdsByMemberIdAndRegionInExcludingBlocked(memberId, regionList, blockedIds, pageable);
 		return getJournalListResponses(pageable, journalIdPage);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<JournalListResponse> findAllJournalsByMemberId(Long memberId, Pageable pageable) {
-		Page<Long> journalIdPage = journalRepository.findIdsByMemberId(memberId, pageable);
+	public Page<JournalListResponse> findAllJournalsByMemberId(Long memberId, Long viewerId, Pageable pageable) {
+		blockService.validateNotBlocked(viewerId, memberId);
+
+		List<Long> blockedIds = blockService.getBlockedMemberIds(viewerId);
+		Page<Long> journalIdPage = journalRepository.findIdsByMemberIdExcludingBlocked(memberId, blockedIds, pageable);
 		return getJournalListResponses(pageable, journalIdPage);
 	}
 
@@ -92,7 +105,7 @@ public class JournalService {
 		validateRequest(request);
 
 		Member member = memberService.findById(memberId);
-		List<HashTag> tags = getOrCreateHashTags(request.hashTag());
+		List<HashTag> tags = hashTagService.getOrCreateHashTags(request.hashTag());
 
 		Journal journal = createJournalEntity(request, member, tags);
 
@@ -103,6 +116,11 @@ public class JournalService {
 		setThumbnailUrl(journal, journalDays);
 
 		journalRepository.save(journal);
+
+		memberStatisticsService.increaseTravelDiaryCount(memberId);
+
+		memberRegionStatisticsService.increaseTravelDiaryCount(memberId, journal.getRegion());
+
 		return journal.getId();
 	}
 
@@ -117,16 +135,6 @@ public class JournalService {
 		if (request.photoMetadataList() == null) {
 			throw new BadRequestException("사진 메타데이터가 필요합니다.");
 		}
-	}
-
-	private List<HashTag> getOrCreateHashTags(List<String> tagNames) {
-		List<HashTag> tags = new ArrayList<>();
-		for (String tagName : tagNames) {
-			HashTag tag = hashTagRepository.findByTagName(tagName)
-				.orElseGet(() -> hashTagRepository.save(HashTag.of(tagName)));
-			tags.add(tag);
-		}
-		return tags;
 	}
 
 	private Journal createJournalEntity(JournalCreateRequest request, Member member, List<HashTag> tags) {
@@ -177,12 +185,9 @@ public class JournalService {
 				if (!uniqueUploadIds.add(meta.uploadId()))
 					continue;
 
-				ImageInfo imageInfo = imageInfoRepository.findByFilename(meta.uploadId())
-					.orElseThrow(() -> new BadRequestException("이미지 정보가 없습니다: " + meta.uploadId()));
+				ImageInfo imageInfo = imageInfoService.getImageInfo(meta.uploadId());
 
-				if (photoRepository.existsByImageInfo(imageInfo)) {
-					throw new BadRequestException("이미 등록된 사진입니다: " + meta.uploadId());
-				}
+				photoService.existsByImageInfo(imageInfo, meta.uploadId());
 
 				Photo photo = Photo.builder()
 					.description(meta.description())

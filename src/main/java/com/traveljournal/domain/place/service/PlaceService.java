@@ -10,6 +10,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.traveljournal.domain.block.repository.BlockRepository;
+import com.traveljournal.domain.block.service.BlockService;
 import com.traveljournal.domain.place.dto.PlaceListResponse;
 import com.traveljournal.domain.place.entity.Place;
 import com.traveljournal.domain.place.repository.PlaceRepository;
@@ -22,18 +24,29 @@ import lombok.RequiredArgsConstructor;
 public class PlaceService {
 
 	private final PlaceRepository placeRepository;
+	private final BlockRepository blockRepository;
+	private final BlockService blockService;
 
 	@Transactional(readOnly = true)
-	public Page<PlaceListResponse> findPlacesByRegionWithPaging(Long memberId, String regionName, Pageable pageable) {
+	public Page<PlaceListResponse> findPlacesByRegionWithPaging(Long memberId, Long viewerId, String regionName, Pageable pageable) {
+
+		blockService.validateNotBlocked(viewerId, memberId);
+
 		List<String> regionList = RegionGroupUtil.getRegionList(regionName);
 
-		Page<Long> placeIdPage = placeRepository.findIdsByMemberIdAndRegionIn(memberId, regionList, pageable);
+		List<Long> blockedIds = blockService.getBlockedMemberIds(viewerId);
+
+		Page<Long> placeIdPage = placeRepository.findIdsByMemberIdAndRegionInExcludingBlocked(memberId, regionList, blockedIds, pageable);
 		return getPlaceListResponses(pageable, placeIdPage);
 	}
 
 	@Transactional(readOnly = true)
-	public Page<PlaceListResponse> findAllPlacesByMemberId(Long memberId, Pageable pageable) {
-		Page<Long> placeIdPage = placeRepository.findIdsByMemberId(memberId, pageable);
+	public Page<PlaceListResponse> findAllPlacesByMemberId(Long memberId, Long viewerId, Pageable pageable) {
+
+		blockService.validateNotBlocked(viewerId, memberId);
+
+		List<Long> blockedIds = blockService.getBlockedMemberIds(viewerId);
+		Page<Long> placeIdPage = placeRepository.findIdsByMemberIdExcludingBlocked(memberId, blockedIds, pageable);
 		return getPlaceListResponses(pageable, placeIdPage);
 	}
 
@@ -46,12 +59,7 @@ public class PlaceService {
 
 		return new PageImpl<>(
 			sortedPlaces.stream()
-				.map(place -> new PlaceListResponse(
-					place.getId(),
-					place.getTitle(),
-					place.getRegion(),
-					place.getThumbnailUrl()
-				))
+				.map(PlaceListResponse::of)
 				.toList(),
 			pageable,
 			placeIdPage.getTotalElements()
