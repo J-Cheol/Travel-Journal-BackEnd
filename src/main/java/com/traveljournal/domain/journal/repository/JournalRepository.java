@@ -1,6 +1,7 @@
 package com.traveljournal.domain.journal.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -49,20 +50,6 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
 	Page<Long> findIdsByKeywordExcludingBlockedMembers(@Param("keyword") String keyword,
 		@Param("blockedMemberIds") List<Long> blockedMemberIds, Pageable pageable);
 
-	@Query(value = """
-		SELECT j.id FROM journal j 
-		WHERE j.member_id NOT IN (:memberIds) 
-		AND (:excludeJournalIds IS NULL OR j.id NOT IN (:excludeJournalIds))
-		AND j.random_index >= RAND()
-		ORDER BY j.random_index
-		LIMIT :limit
-		""", nativeQuery = true)
-	List<Long> findOptimizedRandomIdsByMemberIdNotIn(
-		@Param("memberIds") List<Long> memberIds,
-		@Param("excludeJournalIds") List<Long> excludeJournalIds,
-		@Param("limit") int limit
-	);
-
 	@Query("""
 		SELECT j.id FROM Journal j
 		WHERE j.member.id = :memberId
@@ -99,17 +86,54 @@ public interface JournalRepository extends JpaRepository<Journal, Long> {
 		@Param("seenIds") List<Long> seenIds);
 
 	@Query(value = """
+        SELECT j.id FROM journal j
+        WHERE j.member_id NOT IN (:memberIds)
+        AND j.random_index >= RAND()
+        ORDER BY j.random_index
+        LIMIT :limit
+        """, nativeQuery = true)
+	List<Long> findRandomIdsByMemberIdNotIn(
+		@Param("memberIds") List<Long> memberIds,
+		@Param("limit") int limit
+	);
+
+	@Query(value = """
 		SELECT j.id FROM journal j
 		WHERE j.member_id NOT IN (:memberIds)
+		AND j.id NOT IN (:excludeJournalIds)
+		AND j.random_index >= RAND()
 		ORDER BY j.random_index
 		LIMIT :limit
 		""", nativeQuery = true)
-	List<Long> findRandomIdsByMemberIdNotIn(
+	List<Long> findRandomIdsByMemberIdNotInAndIdNotIn(
 		@Param("memberIds") List<Long> memberIds,
+		@Param("excludeJournalIds") List<Long> excludeJournalIds,
 		@Param("limit") int limit
 	);
 
 	@Modifying
 	@Query(value = "UPDATE journal SET random_index = RAND()", nativeQuery = true)
 	void updateRandomIndex();
+
+	@Query("SELECT COUNT(j) FROM Journal j WHERE j.member.id NOT IN :excludeMemberIds")
+	long countAvailableJournalsForRandomFeedWithoutSeen(@Param("excludeMemberIds") List<Long> excludeMemberIds);
+
+	@Query("SELECT COUNT(j) FROM Journal j WHERE j.member.id NOT IN :excludeMemberIds AND j.id NOT IN :seenIds")
+	long countAvailableJournalsForRandomFeedWithSeen(@Param("excludeMemberIds") List<Long> excludeMemberIds,
+		@Param("seenIds") List<Long> seenIds);
+
+	@Query("SELECT j FROM Journal j JOIN FETCH j.member WHERE j.id = :journalId")
+	Optional<Journal> findBasicInfoById(@Param("journalId") Long journalId);
+
+	@Modifying
+	@Query(value = """
+        DELETE ii FROM image_info ii
+        JOIN photo p ON p.image_info_id = ii.id
+        JOIN journal_day jd ON jd.id = p.journal_day_id
+        WHERE jd.journal_id = :journalId
+        """, nativeQuery = true)
+	void deleteImageInfoByJournalId(@Param("journalId") Long journalId);
+
+	@Query("SELECT j.id FROM Journal j WHERE j.id IN :journalIds")
+	List<Long> findExistingIds(@Param("journalIds") List<Long> journalIds);
 }

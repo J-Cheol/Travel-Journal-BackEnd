@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.traveljournal.domain.Image.service.ImageService;
 import com.traveljournal.domain.block.service.BlockService;
 import com.traveljournal.domain.explore.dto.ExploreJournalFeedResponse;
 import com.traveljournal.domain.explore.entity.ExploreSeenJournal;
@@ -25,111 +26,148 @@ import com.traveljournal.domain.journal.repository.JournalRepository;
 import com.traveljournal.domain.member.entity.Member;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExploreFeedService {
 
 	private final FollowRepository followRepository;
 	private final JournalRepository journalRepository;
 	private final ExploreSeenJournalRepository exploreSeenJournalRepository;
 	private final BlockService blockService;
+	private final ImageService imageService;
 
 	@Transactional(readOnly = true)
 	public Page<ExploreJournalFeedResponse> getExploreFeed(Long memberId, Pageable pageable) {
 		List<Long> followingIds = followRepository.findAcceptedToMemberIdsByFromMemberId(memberId);
-
 		List<Long> blockedIds = blockService.getBlockedMemberIds(memberId);
-		boolean hasBlockedMembers = blockedIds != null && !blockedIds.isEmpty();
-
-		// 1. 팔로우한 회원이 없으면 바로 랜덤 피드
-		if (followingIds == null || followingIds.isEmpty()) {
-			return getOptimizedRandomFeed(memberId, List.of(), List.of(), blockedIds, pageable);
-		}
-
-		// 2. 이미 본 일지 목록 조회
 		List<Long> seenJournalIds = exploreSeenJournalRepository.findSeenJournalIdsByMemberId(memberId);
 
-		// 3. 페이징 최적화: 필요한 ID만 먼저 조회
+
+
+		if (followingIds != null && !followingIds.isEmpty()) {
+			Page<ExploreJournalFeedResponse> followingFeed = getFollowingFeed(
+				memberId, followingIds, blockedIds, seenJournalIds, pageable
+			);
+			if (!followingFeed.isEmpty()) {
+				return followingFeed;
+			}
+		}
+
+		return getRandomFeed(memberId, followingIds, blockedIds, seenJournalIds, pageable);
+	}
+
+	private Page<ExploreJournalFeedResponse> getFollowingFeed(
+		Long memberId, List<Long> followingIds, List<Long> blockedIds,
+		List<Long> seenJournalIds, Pageable pageable) {
+
 		Page<Long> journalIdPage;
-		if (seenJournalIds == null || seenJournalIds.isEmpty()) {
-			if (hasBlockedMembers) {
-				journalIdPage = journalRepository.findIdsByMemberIdInExcludingBlocked(followingIds, blockedIds,
-					pageable);
-			} else {
-				journalIdPage = journalRepository.findIdsByMemberIdInOrderByCreatedAtDesc(followingIds, pageable);
-			}
+
+		if (hasBlockedMembers(blockedIds) && hasSeenJournals(seenJournalIds)) {
+			journalIdPage = journalRepository.findIdsByMemberIdInAndIdNotInExcludingBlocked(
+				followingIds, seenJournalIds, blockedIds, pageable
+			);
+		} else if (hasBlockedMembers(blockedIds)) {
+			journalIdPage = journalRepository.findIdsByMemberIdInExcludingBlocked(
+				followingIds, blockedIds, pageable
+			);
+		} else if (hasSeenJournals(seenJournalIds)) {
+			journalIdPage = journalRepository.findIdsByMemberIdInAndIdNotInOrderByCreatedAtDesc(
+				followingIds, seenJournalIds, pageable
+			);
 		} else {
-			if (hasBlockedMembers) {
-				journalIdPage = journalRepository.findIdsByMemberIdInAndIdNotInExcludingBlocked(
-					followingIds, seenJournalIds, blockedIds, pageable);
-			} else {
-				journalIdPage = journalRepository.findIdsByMemberIdInAndIdNotInOrderByCreatedAtDesc(
-					followingIds, seenJournalIds, pageable);
-			}
+			journalIdPage = journalRepository.findIdsByMemberIdInOrderByCreatedAtDesc(
+				followingIds, pageable
+			);
 		}
 
-		// 4. 팔로우한 회원의 읽지 않은 게시글이 없으면 랜덤 피드
+		return buildFeedResponse(journalIdPage, pageable);
+	}
+
+	@Transactional
+	public void markJournalsAsSeen(Long memberId, List<Long> journalIds) {
+		if (journalIds == null || journalIds.isEmpty()) {
+			return;
+		}
+
+		List<Long> validJournalIds = journalRepository.findExistingIds(journalIds);
+		if (validJournalIds.isEmpty()) {
+			return;
+		}
+
+		List<Long> alreadySeen = exploreSeenJournalRepository
+			.findSeenJournalIdsByMemberIdAndJournalIds(memberId, validJournalIds);
+
+		List<Long> toSave = validJournalIds.stream()
+			.filter(id -> !alreadySeen.contains(id))
+			.toList();
+
+		if (!toSave.isEmpty()) {
+			List<ExploreSeenJournal> entities = toSave.stream()
+				.map(journalId -> ExploreSeenJournal.builder()
+					.member(Member.builder().id(memberId).build())
+					.journal(Journal.builder().id(journalId).build())
+					.seenAt(LocalDateTime.now())
+					.build())
+				.toList();
+
+			exploreSeenJournalRepository.saveAll(entities);
+			exploreSeenJournalRepository.flush();
+		}
+	}
+
+	private boolean hasBlockedMembers(List<Long> blockedIds) {
+		return blockedIds != null && !blockedIds.isEmpty();
+	}
+
+	private boolean hasSeenJournals(List<Long> seenJournalIds) {
+		return seenJournalIds != null && !seenJournalIds.isEmpty();
+	}
+
+	private Page<ExploreJournalFeedResponse> buildFeedResponse(
+		Page<Long> journalIdPage, Pageable pageable) {
+
 		if (journalIdPage.isEmpty()) {
-			return getOptimizedRandomFeed(memberId, followingIds, seenJournalIds, blockedIds, pageable);
+			return new PageImpl<>(List.of(), pageable, 0);
 		}
 
-		// 5. fetch join으로 필요한 데이터만 한 번에 조회
 		List<Journal> journals = journalRepository.findAllByIdInFetchJoin(journalIdPage.getContent());
-
-		// 6. ID 기준으로 정렬하여 순서 보장
 		Map<Long, Journal> journalMap = journals.stream()
 			.collect(Collectors.toMap(Journal::getId, j -> j));
 
 		List<ExploreJournalFeedResponse> content = journalIdPage.getContent().stream()
 			.map(journalMap::get)
 			.filter(Objects::nonNull)
-			.map(j -> ExploreJournalFeedResponse.of(j, j.getMember()))
+			.map(j -> ExploreJournalFeedResponse.of(j, j.getMember(), imageService))
 			.toList();
 
 		return new PageImpl<>(content, pageable, journalIdPage.getTotalElements());
 	}
 
-	private Page<ExploreJournalFeedResponse> getOptimizedRandomFeed(
-		Long memberId, List<Long> followingIds, List<Long> seenJournalIds, List<Long> blockedIds, Pageable pageable) {
+	private Page<ExploreJournalFeedResponse> getRandomFeed(
+		Long memberId, List<Long> followingIds, List<Long> blockedIds,
+		List<Long> seenJournalIds, Pageable pageable) {
 
 		int limit = pageable.getPageSize();
-		boolean hasBlockedMembers = blockedIds != null && !blockedIds.isEmpty();
+		boolean hasBlockedMembers = hasBlockedMembers(blockedIds);
 		boolean hasFollowing = followingIds != null && !followingIds.isEmpty();
-		boolean hasSeenJournals = seenJournalIds != null && !seenJournalIds.isEmpty();
+		boolean hasSeenJournals = hasSeenJournals(seenJournalIds);
 
-		List<Long> excludeMemberIds = new ArrayList<>();
-		excludeMemberIds.add(memberId);
-		if (hasBlockedMembers) {
-			excludeMemberIds.addAll(blockedIds);
-		}
-		if (hasFollowing) {
-			excludeMemberIds.addAll(followingIds);
-		}
-		excludeMemberIds = excludeMemberIds.stream().distinct().toList();
+		List<Long> excludeMemberIds = buildExcludeMemberIds(memberId, blockedIds, followingIds, hasBlockedMembers, hasFollowing);
 
-		List<Long> randomJournalIds;
-
-		if (!hasSeenJournals) {
-			randomJournalIds = journalRepository.findRandomIdsByMemberIdNotIn(excludeMemberIds, limit);
-		} else {
-			randomJournalIds = journalRepository.findOptimizedRandomIdsByMemberIdNotIn(
-				excludeMemberIds, seenJournalIds, limit
-			);
+		if (excludeMemberIds.isEmpty()) {
+			excludeMemberIds = List.of(-1L);
 		}
+
+		List<Long> randomJournalIds = getRandomJournalIds(excludeMemberIds, seenJournalIds, hasSeenJournals, limit);
 
 		if (randomJournalIds.isEmpty()) {
-			if (!hasSeenJournals) {
-				randomJournalIds = journalRepository.findRandomIdsByMemberIdNotIn(excludeMemberIds, limit);
-			} else {
-				randomJournalIds = journalRepository.findOptimizedRandomIdsByMemberIdNotIn(
-					excludeMemberIds, seenJournalIds, limit
-				);
-			}
+			return new PageImpl<>(List.of(), pageable, 0);
 		}
 
 		List<Journal> journals = journalRepository.findAllByIdInFetchJoin(randomJournalIds);
-
 		Map<Long, Journal> journalMap = journals.stream()
 			.collect(Collectors.toMap(Journal::getId, j -> j));
 
@@ -141,36 +179,53 @@ public class ExploreFeedService {
 		Collections.shuffle(orderedJournals);
 
 		List<ExploreJournalFeedResponse> content = orderedJournals.stream()
-			.map(j -> ExploreJournalFeedResponse.of(j, j.getMember()))
+			.map(j -> ExploreJournalFeedResponse.of(j, j.getMember(), imageService))
 			.toList();
 
-		long totalElements = journalRepository.countAvailableJournalsForRandomFeed(excludeMemberIds,
-			hasSeenJournals ? seenJournalIds : List.of());
+		long totalElements = getTotalElementsCount(excludeMemberIds, seenJournalIds, hasSeenJournals);
 
 		return new PageImpl<>(content, pageable, totalElements);
 	}
 
-	@Transactional
-	public void markJournalsAsSeen(Long memberId, List<Long> journalIds) {
-		// 이미 본 일지 필터링하여 불필요한 쿼리 감소
-		List<Long> alreadySeen = exploreSeenJournalRepository.findSeenJournalIdsByMemberIdAndJournalIds(memberId,
-			journalIds);
+	private List<Long> buildExcludeMemberIds(Long memberId, List<Long> blockedIds, List<Long> followingIds,
+		boolean hasBlockedMembers, boolean hasFollowing) {
 
-		List<Long> toSave = journalIds.stream()
-			.filter(id -> !alreadySeen.contains(id))
-			.toList();
+		List<Long> excludeMemberIds = new ArrayList<>();
+		excludeMemberIds.add(memberId);
 
-		if (!toSave.isEmpty()) {
-			// 벌크 삽입으로 쿼리 최소화
-			List<ExploreSeenJournal> entities = toSave.stream()
-				.map(journalId -> ExploreSeenJournal.builder()
-					.member(Member.builder().id(memberId).build())
-					.journal(Journal.builder().id(journalId).build())
-					.seenAt(LocalDateTime.now())
-					.build())
-				.toList();
+		if (hasBlockedMembers) {
+			excludeMemberIds.addAll(blockedIds);
+		}
+		if (hasFollowing) {
+			excludeMemberIds.addAll(followingIds);
+		}
 
-			exploreSeenJournalRepository.saveAll(entities);
+		return excludeMemberIds.stream().distinct().toList();
+	}
+
+	private List<Long> getRandomJournalIds(List<Long> excludeMemberIds, List<Long> seenJournalIds,
+		boolean hasSeenJournals, int limit) {
+
+		if (!hasSeenJournals) {
+			return journalRepository.findRandomIdsByMemberIdNotIn(excludeMemberIds, limit);
+		} else {
+			if (seenJournalIds.isEmpty()) {
+				seenJournalIds = List.of(-1L);
+			}
+
+			return journalRepository.findRandomIdsByMemberIdNotInAndIdNotIn(excludeMemberIds, seenJournalIds, limit);
+		}
+	}
+
+	private long getTotalElementsCount(List<Long> excludeMemberIds, List<Long> seenJournalIds,
+		boolean hasSeenJournals) {
+		if (!hasSeenJournals) {
+			return journalRepository.countAvailableJournalsForRandomFeedWithoutSeen(excludeMemberIds);
+		} else {
+			if (seenJournalIds.isEmpty()) {
+				seenJournalIds = List.of(-1L);
+			}
+			return journalRepository.countAvailableJournalsForRandomFeedWithSeen(excludeMemberIds, seenJournalIds);
 		}
 	}
 

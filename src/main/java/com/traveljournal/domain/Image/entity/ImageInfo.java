@@ -1,6 +1,7 @@
 package com.traveljournal.domain.Image.entity;
 
 import org.checkerframework.common.aliasing.qual.Unique;
+import org.hibernate.annotations.BatchSize;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@BatchSize(size = 10)
 public class ImageInfo {
 
 	@Id
@@ -23,14 +25,14 @@ public class ImageInfo {
 
 	@Column(nullable = false)
 	@Unique
-	private String filename;
+	private String uploadId;
 
 	@Column(nullable = false)
 	private String uploadFilename;
 
 	@Builder
-	public ImageInfo(String filename, String uploadFilename) {
-		this.filename = filename;
+	public ImageInfo(String uploadId, String uploadFilename) {
+		this.uploadId = uploadId;
 		this.uploadFilename = uploadFilename;
 	}
 }

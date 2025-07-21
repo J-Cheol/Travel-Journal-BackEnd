@@ -1,5 +1,12 @@
 package com.traveljournal.domain.photo.dto;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.traveljournal.domain.photo.entity.Photo;
+import com.traveljournal.global.exception.BadRequestException;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public record PhotoMetadataRequest(
@@ -20,4 +27,34 @@ public record PhotoMetadataRequest(
 	@Schema(example = "126.82173888888889")
 	Double longitude
 ) {
+	private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm");
+
+	public static PhotoMetadataRequest from(Photo photo) {
+		return new PhotoMetadataRequest(
+			photo.getImageInfo().getUploadId(),
+			photo.getJournalDay().getDayNumber(),
+			photo.getDescription(),
+			photo.getImageInfo().getUploadFilename(),
+			formatDateTime(photo.getTakenDateTime()),
+			photo.getAddress(),
+			photo.getLatitude(),
+			photo.getLongitude()
+		);
+	}
+
+	@JsonIgnore
+	public LocalDateTime getParsedTakenDateTime() {
+		if (takenDateTime == null || takenDateTime.trim().isEmpty()) {
+			return null;
+		}
+		try {
+			return LocalDateTime.parse(takenDateTime, DATE_TIME_FORMATTER);
+		} catch (Exception e) {
+			throw new BadRequestException("잘못된 날짜 형식입니다: " + takenDateTime);
+		}
+	}
+
+	private static String formatDateTime(LocalDateTime dateTime) {
+		return dateTime != null ? dateTime.format(DATE_TIME_FORMATTER) : null;
+	}
 }
