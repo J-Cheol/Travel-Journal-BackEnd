@@ -88,6 +88,8 @@ dependencies {
     implementation 'software.amazon.awssdk:aws-crt-client'
 
     implementation 'com.drewnoakes:metadata-extractor:2.18.0'
+    
+    runtimeOnly 'com.h2database:h2'
 }
 
 // 현대적인 태스크 구성 방식
