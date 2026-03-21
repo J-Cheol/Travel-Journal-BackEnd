@@ -1,0 +1,51 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+secret:
+  dev-password: test
+  dev-request-url: http://localhost:8080
+
+jwt:
+  secret-key: dGhpcy1pcy1hLXRlc3Qtc2VjcmV0LWtleS1mb3ItY2k=
+  access-token-expiration: 1800000
+  refresh-token-expiration: 604800000
+
+oauth:
+  kakao:
+    client-id: test
+    client-secret: test
+    dev-redirect-uri: http://localhost:3000/oauth/kakao/callback
+    prod-redirect-uri: http://localhost:3000/oauth/kakao/callback
+    token-uri: https://kauth.kakao.com/oauth/token
+    user-info-uri: https://kapi.kakao.com/v2/user/me
+    admin-key: test
+
+oauth2:
+  google:
+    client-id: test
+    client-secret: test
+    scope:
+      - openid
+      - email
+      - profile
+    redirect-uri: http://localhost:8080/auth/google/callback
+    token-uri: https://oauth2.googleapis.com/token
+    test-redirect-uri: http://localhost:3000/auth/google/callback
+
+custom:
+  aws:
+    upload-path: source
+    resized-path: resized
+    default-profile-image: default/profile/default1.png
+
+springdoc:
+  request-url: http://localhost:8080
