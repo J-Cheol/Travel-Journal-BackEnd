@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        TZ = 'Asia/Seoul'
+    }
+
     options {
         timestamps()
     }
@@ -14,6 +18,7 @@ pipeline {
 
         stage('Test') {
             steps {
+                sh 'date'
                 sh 'chmod +x ./gradlew'
                 sh './gradlew clean test'
             }
