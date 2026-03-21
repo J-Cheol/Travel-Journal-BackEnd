@@ -1,0 +1,11 @@
+.git
+.github
+.gradle
+.idea
+build
+out
+*.iml
+*.log
+.DS_Store
+.env
+src/main/resources/application-secret.yml
