@@ -497,9 +497,23 @@ GitHub 저장소의 Webhook 설정에서 `push` 이벤트가 정상적으로 전
 Webhook으로 시작된 Jenkins 파이프라인이 `dev` 브랜치 기준으로 코드를 checkout하고,  
 `./gradlew clean test`까지 정상 수행되어 `Finished: SUCCESS`로 종료되는 것을 확인했습니다.
 
+### Docker 이미지 빌드 자동화
+
+Jenkins Pipeline은 테스트 단계 이후 Docker 이미지를 자동으로 빌드하도록 확장했습니다.
+
+- `dev` 브랜치 변경 시 Webhook으로 Jenkins 자동 실행
+- `./gradlew clean test` 수행
+- 테스트 성공 후 `docker build` 실행
+- Jenkins 빌드 번호를 이미지 태그로 사용
+
+이를 통해 단순 테스트 자동화를 넘어,  
+배포 가능한 결과물(Docker image)까지 자동으로 생성하는 CI 흐름으로 확장했습니다.
+
 ### 의미
 이전에는 로컬에서만 확인하던 테스트를 Jenkins에서도 반복 가능하게 만들었고,  
-나아가 GitHub Webhook을 통해 `dev` 브랜치에 반영된 변경이 자동으로 검증되는 구조까지 확장했습니다.
+GitHub Webhook을 통해 `dev` 브랜치에 반영된 변경이 자동으로 검증되도록 구성했습니다.  
+또한 테스트 성공 후 Docker 이미지까지 자동으로 빌드하도록 확장해,  
+배포 가능한 결과물을 생성하는 단계까지 CI에 포함했습니다.
 
 ---
 
