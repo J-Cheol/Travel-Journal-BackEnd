@@ -3,6 +3,8 @@ pipeline {
 
     environment {
         TZ = 'Asia/Seoul'
+        IMAGE_NAME = 'travel-journal-backend'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     options {
@@ -21,6 +23,12 @@ pipeline {
                 sh 'date'
                 sh 'chmod +x ./gradlew'
                 sh './gradlew clean test'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
     }
