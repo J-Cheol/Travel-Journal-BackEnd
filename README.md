@@ -23,11 +23,12 @@
 8. [포트폴리오 정리 과정에서 추가한 내용](#포트폴리오-정리-과정에서-추가한-내용)
 9. [실행 방법](#실행-방법)
 10. [테스트](#테스트)
-11. [CI](#ci)
-12. [Health Check](#health-check)
-13. [트러블슈팅](#트러블슈팅)
-14. [회고](#회고)
-15. [다음 단계](#다음-단계)
+11. [브랜치 전략](#브랜치-전략)
+12. [CI](#ci)
+13. [Health Check](#health-check)
+14. [트러블슈팅](#트러블슈팅)
+15. [회고](#회고)
+16. [다음 단계](#다음-단계)
 
 ---
 
@@ -447,6 +448,16 @@ docker compose down -v
 
 ---
 
+## 브랜치 전략
+
+- `dev`: 개발 및 통합 검증 브랜치
+- `main`: 운영 반영 기준 브랜치
+
+기능 작업은 개별 브랜치에서 진행한 뒤 `dev`로 통합하고,  
+충분히 검증된 상태를 `main`으로 반영하는 흐름으로 브랜치를 운영했습니다.
+
+---
+
 ## CI
 
 프로젝트 루트의 `Jenkinsfile`을 기준으로 Jenkins Pipeline을 구성했습니다.
@@ -457,9 +468,38 @@ docker compose down -v
 3. JUnit XML 수집
 4. 테스트 리포트 보관
 
+### Jenkins Webhook 기반 자동 테스트
+
+초기에는 Jenkins에서 `Build Now`를 수동으로 실행해 테스트를 확인했지만,  
+이후 GitHub Webhook과 `dev` 브랜치 기준 Job 설정을 통해  
+`dev` 브랜치에 새로운 커밋이 push되면 Jenkins가 변경을 감지하고 자동으로 파이프라인을 실행하도록 구성했습니다.
+
+구성 방식은 아래와 같습니다.
+
+- Jenkins는 Synology 서버에서 상시 실행
+- Jenkins UI는 Tailscale 내부 전용으로 접근
+- GitHub Webhook은 별도 도메인(`jenkins-hook.j-cheol.cloud/github-webhook/`)으로 수신
+- `travel-journal-ci` Job이 `dev` 브랜치를 기준으로 `Jenkinsfile`을 실행
+- 파이프라인에서는 `./gradlew clean test`를 자동 수행
+
+이를 통해 코드 변경 후 사람이 직접 Jenkins에서 실행 버튼을 누르지 않아도,  
+`dev` 브랜치에 반영된 변경을 기준으로 자동 검증이 수행되는 CI 흐름을 만들었습니다.
+
+#### GitHub Webhook 전달 확인
+![GitHub Webhook Delivery](docs/images/ci-webhook-delivery.png)
+
+GitHub 저장소의 Webhook 설정에서 `push` 이벤트가 정상적으로 전달되는 것을 확인했고,  
+이를 통해 Jenkins가 외부 이벤트를 받아 자동 검증을 시작하는 구조를 검증했습니다.
+
+#### Jenkins 자동 빌드 성공 확인
+![Jenkins CI Success](docs/images/ci-jenkins-success.png)
+
+Webhook으로 시작된 Jenkins 파이프라인이 `dev` 브랜치 기준으로 코드를 checkout하고,  
+`./gradlew clean test`까지 정상 수행되어 `Finished: SUCCESS`로 종료되는 것을 확인했습니다.
+
 ### 의미
-이전에는 로컬에서만 확인하던 테스트를  
-Jenkins에서도 반복 가능하게 만들어 **검증 자동화의 출발점**을 만든 상태입니다.
+이전에는 로컬에서만 확인하던 테스트를 Jenkins에서도 반복 가능하게 만들었고,  
+나아가 GitHub Webhook을 통해 `dev` 브랜치에 반영된 변경이 자동으로 검증되는 구조까지 확장했습니다.
 
 ---
 
@@ -617,7 +657,7 @@ Jenkins는 로컬 IDE 설정을 사용하지 않고 저장소 기준 설정만�
 
 앞으로는 아래 방향으로 더 확장해보고 싶습니다.
 
-- Jenkins 자동 트리거 정리
 - Jenkins Pipeline에서 Docker 이미지 빌드까지 확장
-- 상시 실행 서버 환경으로 이전
-- Webhook 기반 자동화까지 확장
+- `main` 브랜치를 기준으로 한 운영 반영 흐름 정리
+- Synology 상시 실행 환경에서 애플리케이션 배포 구조 고도화
+- 파일 저장소 구조(S3 대체 또는 호환 스토리지) 검토
