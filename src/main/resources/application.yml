@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: prod
+    active: dev
     include: secret
   jpa:
     hibernate:
@@ -15,7 +15,7 @@ spring:
         order_insert: true
   servlet:
     multipart:
-      max-file-size: 5MB # 한개 파일의 최대 사이즈 (default: 1MB)
+      max-file-size: 10MB # 한개 파일의 최대 사이즈 (default: 1MB)
       max-request-size: 25MB # 한개 요청의 최대 사이즈 (default: 10MB)
 
 springdoc:
