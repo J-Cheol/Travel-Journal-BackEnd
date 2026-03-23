@@ -6,7 +6,7 @@
 팔로우 관계와 사용자 활동을 바탕으로 여행 콘텐츠를 탐색할 수 있도록 설계한 서비스입니다.
 
 프로젝트 후반에는 백엔드 단독 리드 역할을 맡아 기능 마무리와 구조 안정화를 진행했고,  
-포트폴리오 정리 과정에서 **테스트 코드, Jenkins CI, Docker Compose, Actuator 기반 Health Check**를 추가해  
+포트폴리오 정리 과정에서 **테스트 코드, Jenkins 기반 CI/CD, Docker Compose, Actuator 기반 Health Check**를 추가하여  
 운영 가능한 형태로 다시 정리했습니다.
 
 ---
@@ -111,7 +111,7 @@ Travel Journal은 여행 사진에 포함된 GPS, 촬영 시각 정보를 활용
 - 탐색 피드 및 검색 기능 구현
 - 통계 구조 분리 및 데이터 모델 개선
 - 프로젝트 후반 백엔드 단독 리드 및 안정화
-- 포트폴리오 정리 과정에서 테스트 / CI / Docker / Health Check 추가
+- 포트폴리오 정리 과정에서 테스트 / CI/CD / Docker / Health Check 추가
 
 ---
 
@@ -178,16 +178,17 @@ Travel Journal은 여행 사진에 포함된 GPS, 촬영 시각 정보를 활용
 
 현재 레포에서 재현 가능한 요소는 아래와 같습니다.
 
-- `Jenkinsfile` 기반 테스트 자동화
+- `Jenkinsfile` 기반 CI/CD 자동화
 - `Dockerfile`, `docker-compose.yml` 기반 실행 환경 표준화
 - `application-test.yml` 기반 테스트 환경 분리
 - `application-docker.yml` 기반 Docker 실행 환경 분리
 - `spring-boot-starter-actuator` 기반 `/actuator/health` 제공
 - Docker Compose `healthcheck`
 - `scripts/health-check.sh` 기반 상태 검증
+- `scripts/deploy-main.sh` 기반 main 브랜치 배포 자동화
 
 즉 운영 당시에는 **EC2 + Docker + Nginx Proxy Manager + Blue/Green 배포 구조**를 사용했고,  
-현재 포트폴리오 레포에서는 **테스트, CI, 컨테이너 실행, Health Check까지 재현 가능한 형태**를 중심으로 정리했습니다.
+현재 포트폴리오 레포에서는 **테스트, CI/CD, 컨테이너 실행, Health Check까지 재현 가능한 형태**를 중심으로 정리했습니다.
 
 ---
 
@@ -305,7 +306,7 @@ Travel Journal은 여행 사진에 포함된 GPS, 촬영 시각 정보를 활용
 
 즉, **개발 환경과 테스트 환경을 분리해 CI에서도 동일하게 재현되도록 정리**했습니다.
 
-### 3. Jenkins 기반 CI 구성
+### 3. Jenkins 기반 CI/CD 구성
 프로젝트 루트에 `Jenkinsfile`을 추가해 Jenkins에서 아래 흐름을 자동 실행하도록 만들었습니다.
 
 - 코드 checkout
@@ -313,7 +314,8 @@ Travel Journal은 여행 사진에 포함된 GPS, 촬영 시각 정보를 활용
 - JUnit XML 수집
 - 리포트 보관
 
-로컬에서만 테스트하던 흐름을 Jenkins에서도 반복 가능하게 만든 것이 핵심입니다.
+로컬에서만 테스트하던 흐름을 Jenkins에서도 반복 가능하게 만들었고,  
+`main` 브랜치 기준 배포 자동화까지 연결한 것이 핵심입니다.
 
 ### 4. Docker / Docker Compose 구성
 `Dockerfile`, `docker-compose.yml`, `.env.example`, `application-docker.yml`을 추가해  
@@ -339,9 +341,10 @@ Actuator를 추가하고 `/actuator/health`를 통해 애플리케이션 상태�
 현재 공개 포트폴리오 레포에서는 **실제로 재현 가능한 범위**를 기준으로
 
 - 테스트
-- Jenkins CI
+- Jenkins CI/CD
 - Docker Compose
 - Health Check
+- main 브랜치 배포 자동화
 
 중심으로 정리했습니다.
 
@@ -428,6 +431,14 @@ DB 볼륨까지 정리하려면:
 docker compose down -v
 ```
 
+### 4. Jenkins 배포
+
+- `dev` 브랜치: GitHub Webhook 기반 자동 검증
+- `main` 브랜치: Jenkins `travel-journal-main` Job 기준 배포 수행
+
+`main` 배포 시에는 `scripts/deploy-main.sh` 를 통해 기존 앱 컨테이너를 교체하고,  
+Docker 네트워크 기준으로 MySQL과 연결한 뒤 `/actuator/health` 기반 Health Check가 `UP` 인 경우에만 배포를 완료하도록 구성했습니다.
+
 ---
 
 ## 테스트
@@ -451,10 +462,20 @@ docker compose down -v
 ## 브랜치 전략
 
 - `dev`: 개발 및 통합 검증 브랜치
-- `main`: 운영 반영 기준 브랜치
+- `main`: 운영 반영 및 배포 기준 브랜치
 
 기능 작업은 개별 브랜치에서 진행한 뒤 `dev`로 통합하고,  
-충분히 검증된 상태를 `main`으로 반영하는 흐름으로 브랜치를 운영했습니다.
+Jenkins를 통해 테스트 및 Docker 이미지 빌드가 정상적으로 수행되는지 먼저 검증했습니다.
+
+이후 배포 가능한 상태라고 판단한 변경만 `main`으로 반영하고,  
+`main` 브랜치에서는 실제 배포를 수행하는 흐름으로 브랜치를 운영했습니다.
+
+즉 이 프로젝트에서는
+
+- `feature/* -> dev`: 개발 및 통합 검증
+- `dev -> main`: 배포 승인 및 운영 반영
+
+구조로 브랜치를 구분했습니다.
 
 ---
 
@@ -463,12 +484,26 @@ docker compose down -v
 프로젝트 루트의 `Jenkinsfile`을 기준으로 Jenkins Pipeline을 구성했습니다.
 
 ### Jenkins Pipeline 단계
+
+#### `dev` 브랜치 기준
 1. Checkout
 2. Gradle Test 실행
 3. JUnit XML 수집
 4. 테스트 리포트 보관
+5. Docker 이미지 빌드
 
-### Jenkins Webhook 기반 자동 테스트
+#### `main` 브랜치 기준
+1. Checkout
+2. Gradle Test 실행
+3. JUnit XML 수집
+4. 테스트 리포트 보관
+5. Docker 이미지 빌드
+6. 기존 앱 컨테이너 중지 및 삭제
+7. 새 앱 컨테이너 실행
+8. `/actuator/health` 기반 Health Check
+9. 배포 완료
+
+### Jenkins Webhook 기반 자동 검증
 
 초기에는 Jenkins에서 `Build Now`를 수동으로 실행해 테스트를 확인했지만,  
 이후 GitHub Webhook과 `dev` 브랜치 기준 Job 설정을 통해  
@@ -480,7 +515,7 @@ docker compose down -v
 - Jenkins UI는 Tailscale 내부 전용으로 접근
 - GitHub Webhook은 별도 도메인(`jenkins-hook.j-cheol.cloud/github-webhook/`)으로 수신
 - `travel-journal-ci` Job이 `dev` 브랜치를 기준으로 `Jenkinsfile`을 실행
-- 파이프라인에서는 `./gradlew clean test`를 자동 수행
+- 파이프라인에서는 `./gradlew clean test` 이후 Docker 이미지를 자동으로 빌드
 
 이를 통해 코드 변경 후 사람이 직접 Jenkins에서 실행 버튼을 누르지 않아도,  
 `dev` 브랜치에 반영된 변경을 기준으로 자동 검증이 수행되는 CI 흐름을 만들었습니다.
@@ -491,29 +526,53 @@ docker compose down -v
 GitHub 저장소의 Webhook 설정에서 `push` 이벤트가 정상적으로 전달되는 것을 확인했고,  
 이를 통해 Jenkins가 외부 이벤트를 받아 자동 검증을 시작하는 구조를 검증했습니다.
 
-#### Jenkins 자동 빌드 성공 확인
+#### Jenkins CI 성공 확인
 ![Jenkins CI Success](docs/images/ci-jenkins-success.png)
 
 Webhook으로 시작된 Jenkins 파이프라인이 `dev` 브랜치 기준으로 코드를 checkout하고,  
-`./gradlew clean test`까지 정상 수행되어 `Finished: SUCCESS`로 종료되는 것을 확인했습니다.
+`./gradlew clean test`와 Docker 이미지 빌드까지 정상 수행되어 `Finished: SUCCESS`로 종료되는 것을 확인했습니다.
 
-### Docker 이미지 빌드 자동화
+### `main` 브랜치 기준 자동 배포
 
-Jenkins Pipeline은 테스트 단계 이후 Docker 이미지를 자동으로 빌드하도록 확장했습니다.
+`main` 브랜치는 단순 검증 브랜치가 아니라 실제 배포 기준 브랜치로 운영했습니다.  
+`travel-journal-main` Job은 `main` 기준으로 `Jenkinsfile`을 실행하며,  
+테스트와 Docker 이미지 빌드가 끝난 뒤 배포 스크립트(`scripts/deploy-main.sh`)를 통해  
+기존 앱 컨테이너를 교체하고 Health Check까지 수행하도록 구성했습니다.
 
-- `dev` 브랜치 변경 시 Webhook으로 Jenkins 자동 실행
-- `./gradlew clean test` 수행
-- 테스트 성공 후 `docker build` 실행
-- Jenkins 빌드 번호를 이미지 태그로 사용
+배포 스크립트의 핵심 동작은 아래와 같습니다.
 
-이를 통해 단순 테스트 자동화를 넘어,  
-배포 가능한 결과물(Docker image)까지 자동으로 생성하는 CI 흐름으로 확장했습니다.
+- 기존 `travel-journal-app` 컨테이너 중지 및 삭제
+- 새 Docker 이미지로 컨테이너 실행
+- Synology 내부 Docker 네트워크(`travel-journal-net`) 기준으로 MySQL과 연결
+- `docker exec ... curl http://localhost:8080/actuator/health` 로 상태 확인
+- `status=UP` 확인 후 배포 완료 처리
+
+즉 이 프로젝트에서는
+
+- `dev`: 자동 검증(CI)
+- `main`: 자동 배포(CD)
+
+역할을 구분해 운영했습니다.
+
+#### Jenkins main 배포 성공 확인
+![Jenkins Main Deploy Success](docs/images/cd-jenkins-main-success.png)
+
+`travel-journal-main` Job에서 기존 앱 컨테이너를 교체한 뒤  
+`/actuator/health` 응답이 `{"status":"UP"}` 으로 확인되고,  
+최종적으로 `Finished: SUCCESS` 로 종료되는 것을 확인했습니다.
+
+#### 배포 결과 확인
+![Deployed Swagger UI](docs/images/cd-deployed-swagger-ui.png)
+
+배포 이후 `travel-journal.j-cheol.cloud/swagger-ui.html` 경로로 접근해  
+실제 서비스 도메인 기준으로 애플리케이션이 정상 동작하는 것도 확인했습니다.
 
 ### 의미
+
 이전에는 로컬에서만 확인하던 테스트를 Jenkins에서도 반복 가능하게 만들었고,  
 GitHub Webhook을 통해 `dev` 브랜치에 반영된 변경이 자동으로 검증되도록 구성했습니다.  
-또한 테스트 성공 후 Docker 이미지까지 자동으로 빌드하도록 확장해,  
-배포 가능한 결과물을 생성하는 단계까지 CI에 포함했습니다.
+또한 `main` 브랜치에서는 기존 앱 컨테이너 교체와 Health Check까지 포함한 배포 자동화를 구성해,  
+검증과 배포를 분리한 CI/CD 흐름으로 확장했습니다.
 
 ---
 
@@ -646,6 +705,30 @@ Jenkins는 로컬 IDE 설정을 사용하지 않고 저장소 기준 설정만�
 이후에는 단순 실행 여부가 아니라  
 `status=UP` 기준으로 애플리케이션 상태를 검증할 수 있게 됐습니다.
 
+#### 4) Jenkins 컨테이너 환경과 NAS 호스트 환경 차이로 인한 배포 실패
+
+초기에는 `travel-journal-main` Job에서 배포 스크립트가 실행되더라도  
+NAS에서 수동 실행할 때와 달리 Jenkins에서는 `.env` 파일을 찾지 못하거나,  
+`localhost:8082` 기준 Health Check가 실패하는 문제가 있었습니다.
+
+##### 원인
+Jenkins는 Synology 호스트가 아니라 **Jenkins 컨테이너 내부**에서 동작하므로,
+
+- NAS 호스트 경로(`/volume1/docker/travel-journal/.env`)가 컨테이너에 마운트되어 있지 않으면 접근할 수 없고
+- `curl http://localhost:8082/...` 역시 NAS 호스트가 아니라 Jenkins 컨테이너 자신의 localhost를 바라보게 됩니다
+
+즉 수동 배포 기준으로 작성한 스크립트를 그대로 Jenkins 컨테이너에서 실행하면  
+동일하게 동작하지 않는 문제가 있었습니다.
+
+##### 해결
+- Jenkins 컨테이너에 `/volume1/docker/travel-journal` 경로를 추가 마운트
+- 배포 스크립트에서 NAS 호스트 기준 Health Check 대신  
+  `docker exec travel-journal-app curl http://localhost:8080/actuator/health` 방식으로 수정
+- 이를 통해 Jenkins 컨테이너 환경에서도 실제 앱 컨테이너 상태를 기준으로 배포 성공 여부를 검증하도록 정리
+
+이후 `main` 브랜치 배포 시 기존 컨테이너 교체 → 새 컨테이너 실행 → Health Check 검증까지  
+정상적으로 자동 수행되는 것을 확인했습니다.
+
 ---
 
 ## 회고
@@ -663,7 +746,7 @@ Jenkins는 로컬 IDE 설정을 사용하지 않고 저장소 기준 설정만�
 
 결과적으로 이 프로젝트는  
 단순한 기능 중심 백엔드 프로젝트를 넘어,  
-**테스트, 자동화, 실행 표준화, 상태 검증까지 포함한 프로젝트**로 정리할 수 있었습니다.
+**테스트, CI/CD 자동화, 실행 표준화, 상태 검증까지 포함한 프로젝트**로 정리할 수 있었습니다.
 
 ---
 
@@ -671,7 +754,8 @@ Jenkins는 로컬 IDE 설정을 사용하지 않고 저장소 기준 설정만�
 
 앞으로는 아래 방향으로 더 확장해보고 싶습니다.
 
-- Jenkins Pipeline에서 Docker 이미지 빌드까지 확장
-- `main` 브랜치를 기준으로 한 운영 반영 흐름 정리
-- Synology 상시 실행 환경에서 애플리케이션 배포 구조 고도화
-- 파일 저장소 구조(S3 대체 또는 호환 스토리지) 검토
+- Docker 이미지 태그 전략 고도화 (`latest`, release tag 등)
+- 배포 실패 시 롤백 전략 추가
+- 컨테이너 재시작 정책 및 무중단 배포 방식 보완
+- GitHub Release / Tag 기반 배포 버전 관리 도입
+- Synology 상시 실행 환경에서 운영 자동화 고도화
