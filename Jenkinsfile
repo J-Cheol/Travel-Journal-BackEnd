@@ -34,9 +34,12 @@ pipeline {
 
         stage('Deploy') {
             when {
-                branch 'main'
+                expression {
+                    return env.GIT_BRANCH?.contains('main')
+                }
             }
             steps {
+                sh 'echo "GIT_BRANCH=$GIT_BRANCH"'
                 sh 'chmod +x ./scripts/deploy-main.sh'
                 sh './scripts/deploy-main.sh ${IMAGE_TAG}'
             }
