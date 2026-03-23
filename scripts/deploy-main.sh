@@ -33,6 +33,6 @@ echo "[3/5] 애플리케이션 기동 대기"
 sleep 15
 
 echo "[4/5] Health Check 확인"
-curl -f http://localhost:${HOST_PORT}/actuator/health
+docker exec ${CONTAINER_NAME} curl -f http://localhost:${APP_PORT}/actuator/health
 
 echo "[5/5] 배포 완료"
