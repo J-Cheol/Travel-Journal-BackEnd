@@ -31,11 +31,21 @@ pipeline {
                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
+
+        stage('Deploy') {
+            when {
+                branch 'main'
+            }
+            steps {
+                sh 'chmod +x ./scripts/deploy-main.sh'
+                sh './scripts/deploy-main.sh ${IMAGE_TAG}'
+            }
+        }
     }
 
     post {
         always {
-            junit 'build/test-results/test/*.xml'
+            junit allowEmptyResults: true, testResults: 'build/test-results/test/*.xml'
             archiveArtifacts artifacts: 'build/reports/**', allowEmptyArchive: true
         }
     }
