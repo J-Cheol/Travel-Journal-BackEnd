@@ -24,6 +24,7 @@ docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
 echo "[2/5] 새 이미지로 컨테이너 실행"
 docker run -d \
   --name ${CONTAINER_NAME} \
+  --network travel-journal-net \
   -p ${HOST_PORT}:${APP_PORT} \
   --env-file ${ENV_FILE} \
   ${IMAGE_NAME}:${IMAGE_TAG}
