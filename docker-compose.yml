@@ -35,6 +35,8 @@ services:
       TZ: Asia/Seoul
     ports:
       - "8080:8080"
+    volumes:
+      - /volume1/docker/travel-journal/uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep '\"status\":\"UP\"' || exit 1"]
       interval: 15s
