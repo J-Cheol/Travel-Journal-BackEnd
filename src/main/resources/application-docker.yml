@@ -4,6 +4,7 @@ spring:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: com.mysql.cj.jdbc.Driver
+
   cloud:
     aws:
       credentials:
@@ -18,6 +19,18 @@ springdoc:
   request-url: ${APP_BASE_URL:http://localhost:8080}
 
 custom:
+  storage:
+    type: ${STORAGE_TYPE:local}   # local 또는 s3
+  app:
+    base-url: ${APP_BASE_URL:http://localhost:8080}
+
+  file:
+    upload-dir: ${FILE_UPLOAD_DIR:/app/uploads}
+    upload-path: ${FILE_UPLOAD_PATH:source}
+    resized-path: ${FILE_RESIZED_PATH:resized}
+    default-profile-image: ${FILE_DEFAULT_PROFILE_IMAGE:default/profile/default1.png}
+    base-url: ${FILE_BASE_URL:http://localhost:8080/images}
+
   aws:
     upload-path: ${AWS_UPLOAD_PATH:source}
     resized-path: ${AWS_RESIZED_PATH:resized}
