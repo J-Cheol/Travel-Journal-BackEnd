@@ -26,6 +26,7 @@ docker run -d \
   --name ${CONTAINER_NAME} \
   --network travel-journal-net \
   -p ${HOST_PORT}:${APP_PORT} \
+  -v /volume1/docker/travel-journal/uploads:/app/uploads \
   --env-file ${ENV_FILE} \
   ${IMAGE_NAME}:${IMAGE_TAG}
 
