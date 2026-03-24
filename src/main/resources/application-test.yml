@@ -26,6 +26,16 @@ springdoc:
   request-url: http://localhost:8080
 
 custom:
+  storage:
+    type: local
+  app:
+    base-url: http://localhost:8080
+  file:
+    upload-dir: /tmp/uploads
+    upload-path: source
+    resized-path: resized
+    default-profile-image: /default/profile/default1.png
+    base-url: http://localhost:8080/images
   aws:
     upload-path: source
     resized-path: resized
