@@ -28,6 +28,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 	private final JwtTokenProvider jwtTokenProvider;
 
 	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+		String path = request.getRequestURI();
+
+		return path.startsWith("/default/profile/")
+			|| path.startsWith("/images/")
+			|| path.startsWith("/swagger")
+			|| path.startsWith("/swagger-ui")
+			|| path.startsWith("/api-docs")
+			|| path.startsWith("/v3/api-docs")
+			|| path.startsWith("/actuator/health")
+			|| path.startsWith("/v1/auth/login/")
+			|| path.equals("/v1/tokens/reissue");
+	}
+
+	@Override
 	protected void doFilterInternal(
 		HttpServletRequest request,
 		HttpServletResponse response,
